@@ -89,6 +89,8 @@ interface ViewerState {
   sidebarOpen: boolean;
   /** Dinaikkan untuk memicu reset/fit kamera. */
   cameraResetNonce: number;
+  /** Dinaikkan untuk memicu pengambilan screenshot (di dalam canvas). */
+  screenshotNonce: number;
 
   // --- Actions ---
   setModel: (model: ModelSource) => void;
@@ -115,6 +117,7 @@ interface ViewerState {
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
   resetCamera: () => void;
+  requestScreenshot: () => void;
 }
 
 export const useViewerStore = create<ViewerState>((set) => ({
@@ -144,6 +147,7 @@ export const useViewerStore = create<ViewerState>((set) => ({
   settings: DEFAULT_SETTINGS,
   sidebarOpen: true,
   cameraResetNonce: 0,
+  screenshotNonce: 0,
 
   setModel: (model) =>
     set({
@@ -199,6 +203,7 @@ export const useViewerStore = create<ViewerState>((set) => ({
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
   resetCamera: () => set((s) => ({ cameraResetNonce: s.cameraResetNonce + 1 })),
+  requestScreenshot: () => set((s) => ({ screenshotNonce: s.screenshotNonce + 1 })),
 }));
 
 export { SAMPLE_MODEL };

@@ -1,6 +1,8 @@
 import { useViewerStore } from '@/store/viewerStore';
 import { useLoadingManager } from '@/hooks/useLoadingManager';
 import { Sidebar } from '@/components/layout/Sidebar';
+import { Toolbar } from '@/components/layout/Toolbar';
+import { MobileSheet } from '@/components/layout/MobileSheet';
 import { ViewerCanvas } from '@/components/viewer/ViewerCanvas';
 import { DropZone } from '@/components/upload/DropZone';
 import { LoadingOverlay } from '@/components/upload/LoadingOverlay';
@@ -13,6 +15,7 @@ export default function App() {
 
   return (
     <div className="flex h-full w-full overflow-hidden bg-neutral-100 dark:bg-neutral-950">
+      {/* Sidebar kiri (desktop). Disembunyikan di mobile — diganti bottom sheet. */}
       {sidebarOpen && (
         <div className="hidden w-80 shrink-0 border-r border-neutral-200 md:block dark:border-neutral-800">
           <Sidebar />
@@ -27,10 +30,16 @@ export default function App() {
         </div>
 
         {/* Overlay UI (di luar canvas). */}
+        <Toolbar />
         <DropZone />
         <LoadingOverlay />
         <ErrorToast />
       </main>
+
+      {/* Bottom sheet (mobile). */}
+      <MobileSheet>
+        <Sidebar />
+      </MobileSheet>
 
       {/* Tooltip hover (fixed, mengikuti kursor). */}
       <InteractionTooltip />

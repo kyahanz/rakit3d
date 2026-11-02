@@ -31,6 +31,7 @@ export function Model({ gltf, source }: ModelProps) {
   const setSceneRoot = useViewerStore((s) => s.setSceneRoot);
   const toggleInteraction = useViewerStore((s) => s.toggleInteraction);
   const setHovered = useViewerStore((s) => s.setHovered);
+  const wireframe = useViewerStore((s) => s.settings.wireframe);
 
   // Dispose model lama + clear cache + revoke URL saat model berganti.
   useDisposeOnChange(source, scene);
@@ -47,6 +48,19 @@ export function Model({ gltf, source }: ModelProps) {
   useEffect(() => {
     setSceneRoot(scene);
   }, [scene, setSceneRoot]);
+
+  // Terapkan wireframe ke semua material saat setting berubah.
+  useEffect(() => {
+    scene.traverse((o) => {
+      if (!isMesh(o)) return;
+      const mats = Array.isArray(o.material) ? o.material : [o.material];
+      for (const m of mats) {
+        const wf = m as { wireframe?: boolean };
+        if ('wireframe' in wf) wf.wireframe = wireframe;
+      }
+    });
+    invalidate();
+  }, [scene, wireframe]);
 
   // Model berhasil tampil → matikan overlay & catat sebagai model baik terakhir.
   useEffect(() => {

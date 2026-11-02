@@ -8,6 +8,7 @@ import { SceneSetup } from './SceneSetup';
 import { CameraRig } from './CameraRig';
 import { ModelLoader } from './ModelLoader';
 import { ModelErrorBoundary } from './ModelErrorBoundary';
+import { ScreenshotController } from './ScreenshotController';
 
 /** Tangani kegagalan load: tampilkan error, revoke URL gagal, pulihkan model baik terakhir. */
 function handleModelError(message: string): void {
@@ -70,6 +71,8 @@ export function ViewerCanvas() {
           </Suspense>
         </ModelErrorBoundary>
       </CameraRig>
+
+      <ScreenshotController />
 
       {import.meta.env.DEV && showPerf && <Perf position="bottom-right" />}
     </Canvas>

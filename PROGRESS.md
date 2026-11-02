@@ -180,3 +180,18 @@ update PROGRESS.md, lalu git commit.
 - **Catatan:** kegagalan sempat terlihat (semua diam) ternyata state HMR rusak di tab lama;
   tab bersih normal. `window.__gl` bisa basi → verifikasi via transform node, bukan frame count.
 - Gate: typecheck ✔, lint ✔, build ✔.
+
+### Tahap 7 — Settings, Toolbar, Responsive ✅
+- `SettingsPanel`: preset environment (city/studio/sunset/warehouse/apartment), latar
+  (transparan/warna+color picker/environment+blur), toggle bayangan/wireframe/grid/statistik
+  FPS (FPS hanya dev). Wireframe diterapkan ke semua material via effect di `Model`.
+- `Toolbar` (mengambang kanan-atas): toggle sidebar, reset kamera (`cameraResetNonce`),
+  screenshot PNG, fullscreen (Fullscreen API). Semua tombol `aria-label`.
+- `ScreenshotController`: render scene ke `WebGLRenderTarget` lalu `readRenderTargetPixels` →
+  canvas 2D (balik Y) → unduh PNG. **Tanpa `preserveDrawingBuffer`** di canvas utama
+  (sesuai spec), sRGB disamakan.
+- Responsive: `MobileSheet` (<768px) bottom sheet yang bisa ditarik (pointer drag, snap
+  collapsed/expanded); sidebar kiri disembunyikan di mobile. Dark/light ikut sistem (Tailwind v4).
+- Verifikasi browser: wireframe & grid aktif, environment sunset, screenshot tanpa error,
+  reset kamera, bottom sheet drag → expand. 0 error konsol.
+- Gate: typecheck ✔, lint ✔, build ✔.
