@@ -1,0 +1,6 @@
+dist
+node_modules
+public/draco
+public/basis
+*.glb
+*.gltf
