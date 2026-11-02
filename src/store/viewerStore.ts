@@ -6,6 +6,7 @@ import type {
   ManualInteraction,
   ModelSource,
   ModelStats,
+  ParsedAssembly,
   PlaybackInfo,
   ViewerSettings,
 } from '@/types/viewer';
@@ -36,6 +37,7 @@ const DEFAULT_SETTINGS: ViewerSettings = {
   grid: false,
   showPerf: false,
   envBlur: 0.5,
+  assemblyHideFuture: false,
 };
 
 interface LoadingState {
@@ -58,6 +60,8 @@ interface ViewerState {
   selectedUuid: string | null;
   /** Node target fokus kamera + nonce pemicu. */
   focusTarget: Object3D | null;
+  /** Kotak target fokus kamera (min/max) — dipakai Mode Rakit untuk fokus ke part langkah. */
+  focusBox: [number, number, number, number, number, number] | null;
   focusNonce: number;
 
   // --- Animasi ---
@@ -77,6 +81,21 @@ interface ViewerState {
   hovered: HoverInfo | null;
   /** True saat ada transisi buka/tutup berjalan → frameloop "always". */
   interacting: boolean;
+
+  // --- Mode Rakit (Assembly) ---
+  /** Data assembly ter-parse (null = Mode Rakit tidak aktif). */
+  assembly: ParsedAssembly | null;
+  assemblyError: string | null;
+  /** Nilai explode 0..1. */
+  explode: number;
+  /** Visibilitas per grup (id → tampil). */
+  groupVisibility: Record<string, boolean>;
+  /** Status toggle opsi (id → aktif). */
+  assemblyToggles: Record<string, boolean>;
+  /** Langkah rakit aktif (1-based), null = "Lihat semua". */
+  activeStep: number | null;
+  /** True saat transisi explode/langkah berjalan → frameloop "always". */
+  assemblyAnimating: boolean;
 
   // --- Loading & error ---
   loading: LoadingState;
@@ -100,6 +119,7 @@ interface ViewerState {
   setSceneRoot: (root: Object3D | null) => void;
   setSelected: (uuid: string | null) => void;
   focusNode: (node: Object3D | null) => void;
+  focusBounds: (min: [number, number, number], max: [number, number, number]) => void;
   setClips: (clips: ClipInfo[]) => void;
   setPlayback: (playback: Record<string, PlaybackInfo>) => void;
   setAnimApi: (api: AnimationApi | null) => void;
@@ -110,6 +130,14 @@ interface ViewerState {
   setManualInteraction: (uuid: string, manual: ManualInteraction | null) => void;
   setHovered: (hovered: HoverInfo | null) => void;
   setInteracting: (interacting: boolean) => void;
+  setAssembly: (assembly: ParsedAssembly | null) => void;
+  setAssemblyError: (error: string | null) => void;
+  setExplode: (explode: number) => void;
+  toggleGroupVisibility: (groupId: string) => void;
+  setAssemblyToggle: (toggleId: string, on: boolean) => void;
+  setActiveStep: (step: number | null) => void;
+  stepBy: (delta: number) => void;
+  setAssemblyAnimating: (animating: boolean) => void;
   setLoading: (loading: Partial<LoadingState>) => void;
   setError: (error: string | null) => void;
   setNotice: (notice: string | null) => void;
@@ -128,6 +156,7 @@ export const useViewerStore = create<ViewerState>((set) => ({
   sceneRoot: null,
   selectedUuid: null,
   focusTarget: null,
+  focusBox: null,
   focusNonce: 0,
 
   clips: [],
@@ -139,6 +168,14 @@ export const useViewerStore = create<ViewerState>((set) => ({
   manualInteractions: {},
   hovered: null,
   interacting: false,
+
+  assembly: null,
+  assemblyError: null,
+  explode: 0,
+  groupVisibility: {},
+  assemblyToggles: {},
+  activeStep: null,
+  assemblyAnimating: false,
 
   loading: { active: true, progress: 0, fileName: 'sample.glb' },
   error: null,
@@ -165,13 +202,27 @@ export const useViewerStore = create<ViewerState>((set) => ({
       manualInteractions: {},
       hovered: null,
       interacting: false,
+      assembly: null,
+      assemblyError: null,
+      explode: 0,
+      groupVisibility: {},
+      assemblyToggles: {},
+      activeStep: null,
+      assemblyAnimating: false,
     }),
   setLastGoodModel: (lastGoodModel) => set({ lastGoodModel }),
   setStats: (stats) => set({ stats }),
   setModelRadius: (modelRadius) => set({ modelRadius }),
   setSceneRoot: (sceneRoot) => set({ sceneRoot }),
   setSelected: (selectedUuid) => set({ selectedUuid }),
-  focusNode: (focusTarget) => set((s) => ({ focusTarget, focusNonce: s.focusNonce + 1 })),
+  focusNode: (focusTarget) =>
+    set((s) => ({ focusTarget, focusBox: null, focusNonce: s.focusNonce + 1 })),
+  focusBounds: (min, max) =>
+    set((s) => ({
+      focusTarget: null,
+      focusBox: [min[0], min[1], min[2], max[0], max[1], max[2]],
+      focusNonce: s.focusNonce + 1,
+    })),
   setClips: (clips) => set({ clips }),
   setPlayback: (playback) => set({ playback }),
   setAnimApi: (animApi) => set({ animApi }),
@@ -195,6 +246,32 @@ export const useViewerStore = create<ViewerState>((set) => ({
     }),
   setHovered: (hovered) => set({ hovered }),
   setInteracting: (interacting) => set({ interacting }),
+  setAssembly: (assembly) =>
+    set({
+      assembly,
+      assemblyError: null,
+      explode: 0,
+      activeStep: null,
+      // Default: semua grup tampil, toggle mati (kecuali bisa diatur kemudian).
+      groupVisibility: assembly ? Object.fromEntries(assembly.groups.map((g) => [g.id, true])) : {},
+      assemblyToggles: assembly ? Object.fromEntries(assembly.toggles.map((t) => [t.id, false])) : {},
+    }),
+  setAssemblyError: (assemblyError) => set({ assemblyError }),
+  setExplode: (explode) => set({ explode, assemblyAnimating: true }),
+  toggleGroupVisibility: (groupId) =>
+    set((s) => ({ groupVisibility: { ...s.groupVisibility, [groupId]: !s.groupVisibility[groupId] } })),
+  setAssemblyToggle: (toggleId, on) =>
+    set((s) => ({ assemblyToggles: { ...s.assemblyToggles, [toggleId]: on } })),
+  setActiveStep: (activeStep) => set({ activeStep, assemblyAnimating: true }),
+  stepBy: (delta) =>
+    set((s) => {
+      if (!s.assembly || s.assembly.steps.length === 0) return {};
+      const count = s.assembly.steps.length;
+      const current = s.activeStep ?? 0;
+      const next = Math.min(count, Math.max(1, current + delta));
+      return { activeStep: next, assemblyAnimating: true };
+    }),
+  setAssemblyAnimating: (assemblyAnimating) => set({ assemblyAnimating }),
   setLoading: (loading) =>
     set((s) => ({ loading: { ...s.loading, ...loading } })),
   setError: (error) => set({ error }),

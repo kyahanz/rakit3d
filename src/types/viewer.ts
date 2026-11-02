@@ -44,6 +44,8 @@ export interface ViewerSettings {
   showPerf: boolean;
   /** Blur environment saat dipakai sebagai background (0–1). */
   envBlur: number;
+  /** Mode Rakit: part di langkah > N disembunyikan (true) atau dibuat transparan (false). */
+  assemblyHideFuture: boolean;
 }
 
 /** Sumber konfigurasi interaksi sebuah node. */
@@ -73,6 +75,54 @@ export interface ManualInteraction {
   angle?: number;
   distance?: number;
   clip?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Mode Rakit (Assembly)
+// ---------------------------------------------------------------------------
+export type AssemblyToggleType = 'interaction' | 'dimensions' | 'visibility';
+
+export interface AssemblyGroup {
+  id: string;
+  label: string;
+  node: string;
+  dims?: string;
+}
+
+export interface AssemblyToggle {
+  id: string;
+  label: string;
+  type: AssemblyToggleType;
+  nodes?: string[];
+  states?: string[];
+}
+
+export interface AssemblyStep {
+  n: number;
+  group: string;
+  title: string;
+  desc?: string;
+  nodes: string[];
+}
+
+/** Dimensi (from/to sudah dikonversi ke meter). */
+export interface AssemblyDimension {
+  id: string;
+  group?: string;
+  from: [number, number, number];
+  to: [number, number, number];
+  label: string;
+}
+
+export interface ParsedAssembly {
+  title: string;
+  subtitle?: string;
+  groups: AssemblyGroup[];
+  toggles: AssemblyToggle[];
+  steps: AssemblyStep[];
+  dimensions: AssemblyDimension[];
+  /** Nama node yang dirujuk tapi tidak ada di model (untuk peringatan). */
+  missingNodes: string[];
 }
 
 /** Metadata satu animation clip. */

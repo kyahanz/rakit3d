@@ -6,6 +6,7 @@ import { SceneTreePanel } from '@/components/panels/SceneTreePanel';
 import { AnimationPanel } from '@/components/panels/AnimationPanel';
 import { InteractionsPanel } from '@/components/panels/InteractionsPanel';
 import { SettingsPanel } from '@/components/panels/SettingsPanel';
+import { AssemblyPanel } from '@/components/panels/AssemblyPanel';
 
 /**
  * Panel kiri. Berisi info model & scene tree (tahap 4). Animation, Settings, dan
@@ -13,6 +14,7 @@ import { SettingsPanel } from '@/components/panels/SettingsPanel';
  */
 export function Sidebar() {
   const model = useViewerStore((s) => s.model);
+  const hasAssembly = useViewerStore((s) => s.assembly !== null);
 
   return (
     <aside className="flex h-full w-full flex-col overflow-hidden bg-white text-neutral-900 dark:bg-neutral-900 dark:text-neutral-100">
@@ -25,6 +27,7 @@ export function Sidebar() {
       </div>
 
       <div className="scrollbar-thin flex-1 overflow-y-auto">
+        {hasAssembly && <AssemblyPanel />}
         <Section title="Info Model">
           <ModelInfoPanel />
         </Section>

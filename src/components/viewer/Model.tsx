@@ -8,7 +8,10 @@ import { useModelStats } from '@/hooks/useModelStats';
 import { useAnimationController } from '@/hooks/useAnimationController';
 import { useInteractions, useInteractionTransitions } from '@/hooks/useInteractions';
 import { displayLabel, findInteractiveAncestor } from '@/lib/interactions';
+import { assemblyRuntime } from '@/lib/assemblyRuntime';
 import { Highlighter } from './Highlighter';
+import { AssemblyController } from './AssemblyController';
+import { DimensionLines } from './DimensionLines';
 import type { ModelSource } from '@/types/viewer';
 
 const CLICK_THRESHOLD = 6; // px — di atas ini dianggap drag kamera, bukan klik.
@@ -31,6 +34,7 @@ export function Model({ gltf, source }: ModelProps) {
   const setSceneRoot = useViewerStore((s) => s.setSceneRoot);
   const toggleInteraction = useViewerStore((s) => s.toggleInteraction);
   const setHovered = useViewerStore((s) => s.setHovered);
+  const setActiveStep = useViewerStore((s) => s.setActiveStep);
   const wireframe = useViewerStore((s) => s.settings.wireframe);
 
   // Dispose model lama + clear cache + revoke URL saat model berganti.
@@ -112,6 +116,25 @@ export function Model({ gltf, source }: ModelProps) {
     if (d && Math.hypot(e.nativeEvent.clientX - d.x, e.nativeEvent.clientY - d.y) > CLICK_THRESHOLD) {
       return;
     }
+    // Mode Rakit: klik part → pilih langkah tempat part dipasang.
+    const assembly = useViewerStore.getState().assembly;
+    if (assembly) {
+      let step = assemblyRuntime.stepOfUuid.get(e.object.uuid);
+      if (step == null) {
+        // telusuri ke atas bila yang kena child mesh.
+        let cur: Object3D | null = e.object.parent;
+        while (cur && step == null) {
+          step = assemblyRuntime.stepOfUuid.get(cur.uuid);
+          cur = cur.parent;
+        }
+      }
+      if (step != null) {
+        e.stopPropagation();
+        setActiveStep(step);
+        return;
+      }
+    }
+
     const entry = findEntry(e.object);
     if (!entry) return;
     e.stopPropagation(); // kena node interaktif terdekat ke atas
@@ -153,6 +176,9 @@ export function Model({ gltf, source }: ModelProps) {
           onPointerMove={handlePointerMove}
           onPointerLeave={handlePointerLeave}
         />
+        {/* Mode Rakit: explode/langkah + garis ukur (dalam frame grounding model). */}
+        <AssemblyController sceneRoot={scene} />
+        <DimensionLines />
       </group>
       <Highlighter byUuid={interactions.byUuid} />
     </>

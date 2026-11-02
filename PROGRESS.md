@@ -213,3 +213,30 @@ update PROGRESS.md, lalu git commit.
 - **Catatan:** `@react-three/postprocessing` terpasang (stack wajib) tetapi tidak dipakai —
   highlight memakai emissive (diizinkan spec sebagai alternatif outline), jadi tidak ikut bundle.
 - Gate: typecheck ✔, lint ✔, build ✔.
+
+### Tahap 9 — Mode Rakit (Assembly Viewer) ✅
+- **Data:** `lib/assembly.ts` validasi `*.assembly.json` dengan **zod**; mm → meter untuk
+  dimensi; node yang dirujuk tapi tak ada dicatat `missingNodes` (peringatan). `useAssembly`
+  memuat otomatis bila `model.assemblyUrl` ada (cocok nama) → Mode Rakit aktif.
+- **Controller (`AssemblyController`, dalam group grounding Model):**
+  - Explode: tiap part (anak langsung grup) punya posisi asli; offset = arah dari pusat grup
+    × slider, easing `easing.damp`; `frameloop=always` saat transisi.
+  - Langkah N: part < N normal, part N highlight emissive aksen + "turun" (drop-in eased),
+    part > N disembunyikan/transparan (opsi `assemblyHideFuture`); kamera fokus ke kotak
+    part langkah (`focusBounds` + margin agar panel tipis tak over-zoom); keluar langkah → refit.
+  - Visibilitas grup + toggle `visibility`; peta uuid→langkah untuk klik part.
+- **DimensionLines:** garis ukur 3D (drei `<Line>` + tick) + label `<Html>` (menghadap kamera,
+  `pointerEvents:none` agar tak memblok klik), muncul saat toggle `dimensions` aktif.
+- **Panel (krem, sticky header):** `AssemblyPanel` + `GroupToggle` (chip pill hitam/outline),
+  `ExplodeSlider`, `OptionChips` (interaction tampil state "Pintu: tutup/buka"), `StepList`/
+  `StepItem` (nomor kotak, judul tebal, desc abu), "Lihat semua", prev/next + **keyboard ←/→**.
+- Klik part di model (mode rakit) → pilih langkah pemasangannya.
+- **Model contoh:** `generate-sample` menghasilkan lemari multi-part + `sample.assembly.json`
+  (6 langkah) dan kotak + `box.assembly.json` (3 langkah) — membuktikan sistem **generik**.
+- **Verifikasi browser:** panel krem tampil otomatis, explode memisah part, langkah 3 highlight
+  samping + ghost part berikut + kamera fokus, "Lihat semua" refit, dimensi 1000/2000/580
+  dengan tick, chip "Pintu" buka pintu, klik panel → pilih langkah 3, box.glb assembly generik,
+  0 error konsol.
+- **Perbaikan saat uji:** fokus langkah ke panel tipis sempat membuat kamera over-zoom (layar
+  hitam) & "Lihat semua" tak refit → ditambah margin kotak fokus + refit saat keluar langkah.
+- Gate: typecheck ✔, lint ✔, build ✔.

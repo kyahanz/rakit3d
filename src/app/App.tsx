@@ -1,5 +1,6 @@
 import { useViewerStore } from '@/store/viewerStore';
 import { useLoadingManager } from '@/hooks/useLoadingManager';
+import { useAssembly } from '@/hooks/useAssembly';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Toolbar } from '@/components/layout/Toolbar';
 import { MobileSheet } from '@/components/layout/MobileSheet';
@@ -12,6 +13,7 @@ import { InteractionTooltip } from '@/components/viewer/InteractionTooltip';
 export default function App() {
   const sidebarOpen = useViewerStore((s) => s.sidebarOpen);
   useLoadingManager();
+  useAssembly();
 
   return (
     <div className="flex h-full w-full overflow-hidden bg-neutral-100 dark:bg-neutral-950">

@@ -32,13 +32,14 @@ export function ViewerCanvas() {
   const modelUrl = useViewerStore((s) => s.model.url);
   const animating = useViewerStore((s) => s.animating);
   const interacting = useViewerStore((s) => s.interacting);
+  const assemblyAnimating = useViewerStore((s) => s.assemblyAnimating);
 
   return (
     <Canvas
       // Render on-demand (hemat GPU): invalidate() saat kamera/tween berubah.
       // Saat animasi berjalan, beralih ke "always" agar mixer ter-update tiap frame,
       // lalu kembali "demand" otomatis saat semua clip berhenti.
-      frameloop={animating || interacting ? 'always' : 'demand'}
+      frameloop={animating || interacting || assemblyAnimating ? 'always' : 'demand'}
       dpr={[1, 2]}
       shadows
       gl={{

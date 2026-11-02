@@ -43,6 +43,7 @@ function Toggle({
 export function SettingsPanel() {
   const settings = useViewerStore((s) => s.settings);
   const update = useViewerStore((s) => s.updateSettings);
+  const hasAssembly = useViewerStore((s) => s.assembly !== null);
 
   return (
     <div className="space-y-3">
@@ -125,6 +126,13 @@ export function SettingsPanel() {
         <Toggle label="Grid" checked={settings.grid} onChange={(v) => update({ grid: v })} />
         {import.meta.env.DEV && (
           <Toggle label="Statistik FPS" checked={settings.showPerf} onChange={(v) => update({ showPerf: v })} />
+        )}
+        {hasAssembly && (
+          <Toggle
+            label="Mode Rakit: sembunyikan part berikutnya"
+            checked={settings.assemblyHideFuture}
+            onChange={(v) => update({ assemblyHideFuture: v })}
+          />
         )}
       </div>
     </div>
