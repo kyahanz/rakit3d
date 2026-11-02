@@ -5,6 +5,7 @@ import { ViewerCanvas } from '@/components/viewer/ViewerCanvas';
 import { DropZone } from '@/components/upload/DropZone';
 import { LoadingOverlay } from '@/components/upload/LoadingOverlay';
 import { ErrorToast } from '@/components/upload/ErrorToast';
+import { InteractionTooltip } from '@/components/viewer/InteractionTooltip';
 
 export default function App() {
   const sidebarOpen = useViewerStore((s) => s.sidebarOpen);
@@ -30,6 +31,9 @@ export default function App() {
         <LoadingOverlay />
         <ErrorToast />
       </main>
+
+      {/* Tooltip hover (fixed, mengikuti kursor). */}
+      <InteractionTooltip />
     </div>
   );
 }

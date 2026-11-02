@@ -157,3 +157,26 @@ update PROGRESS.md, lalu git commit.
 - Verifikasi browser: Spin berputar (time 0→0.62 dalam 700ms), stop → animating false &
   reset, panel lengkap tampil. 0 error baru.
 - Gate: typecheck ✔, lint ✔, build ✔.
+
+### Tahap 6 — Sistem Interaksi + Highlight + Tooltip ✅
+- `lib/interactions.ts`: `resolveInteraction` prioritas C manual → A userData → B konvensi
+  INT_ (clip cocok via `findMatchingClip`, atau default rotate 90° Y). `buildInteractiveList`.
+- `hooks/useInteractions.ts`:
+  - `useInteractions`: daftar node interaktif (memo scene+clips+manual) + Set/Map lookup.
+  - `useInteractionTransitions`: useFrame menggerakkan buka/tutup halus dengan `maath
+    easing.damp` — rotate/translate (damp transform ke base+delta×open), animation (damp
+    progress 0..1 → set `action.time`, action di-`paused` agar tak maju sendiri). Set
+    `store.interacting` → Canvas `frameloop="always"` saat transisi, kembali demand saat selesai.
+- Raycast: `findInteractiveAncestor` (klik child mesh → cari parent interaktif), `stopPropagation`.
+  Bedakan klik vs drag kamera (ambang 6px). Hover → tooltip (`InteractionTooltip`, DOM) +
+  highlight emissive (`Highlighter`, menyimpan & memulihkan emissive asli). Mobile: tap = klik.
+- `InteractionsPanel`: Buka/Tutup semua, daftar node + status (terbuka/tertutup · tipe),
+  **mode manual C** (pilih node di tree → form tipe/sumbu/sudut/jarak → `setManualInteraction`).
+- State buka/tutup per node (uuid) di zustand; `mixerRegistry` berbagi actions ke interaksi clip.
+- **Verifikasi browser (tab bersih):** pintu rotate ke 1.570 rad (klik & panel), laci translate
+  0.02→0.32 m, tutup kotak **clip** buka (quat 0→-0.571) & tutup balik (≈0), hover "Laci" +
+  highlight biru, interacting kembali false (demand). Generik: box.glb jalan tanpa ubah kode.
+  0 error konsol.
+- **Catatan:** kegagalan sempat terlihat (semua diam) ternyata state HMR rusak di tab lama;
+  tab bersih normal. `window.__gl` bisa basi → verifikasi via transform node, bukan frame count.
+- Gate: typecheck ✔, lint ✔, build ✔.

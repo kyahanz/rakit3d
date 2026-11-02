@@ -4,7 +4,16 @@
 //   B. konvensi nama node diawali "INT_" (+ clip yang mengandung nama node)
 //   C. override manual dari UI
 import type { Object3D } from 'three';
-import type { Axis, InteractionConfig, InteractionType } from '@/types/viewer';
+import type {
+  Axis,
+  InteractionConfig,
+  InteractionType,
+  ManualInteraction,
+} from '@/types/viewer';
+
+/** Default sudut rotate (derajat) & jarak translate (meter) bila tidak ditentukan. */
+export const DEFAULT_ANGLE = 90;
+export const DEFAULT_DISTANCE = 0.3;
 
 export const INT_PREFIX = 'INT_';
 
@@ -65,6 +74,83 @@ export function displayLabel(obj: Object3D): string {
   if (label) return label;
   if (obj.name.startsWith(INT_PREFIX)) return obj.name.slice(INT_PREFIX.length).replace(/_/g, ' ');
   return obj.name || '(tanpa nama)';
+}
+
+/** Cari clip yang namanya mengandung nama node (konvensi B, mis. "INT_Pintu_Open"). */
+export function findMatchingClip(obj: Object3D, clipNames: string[]): string | undefined {
+  return clipNames.find((c) => c.includes(obj.name));
+}
+
+/** C. Ubah override manual menjadi InteractionConfig. */
+export function manualToConfig(m: ManualInteraction, label: string): InteractionConfig {
+  return {
+    type: m.type,
+    axis: m.axis,
+    angle: m.angle,
+    distance: m.distance,
+    clip: m.clip,
+    label,
+    duration: 0.6,
+    source: 'manual',
+  };
+}
+
+/**
+ * Resolusi konfigurasi interaksi sebuah node dengan prioritas: C manual → A userData →
+ * B konvensi INT_ (+ clip cocok, atau default rotate). Null bila tidak interaktif.
+ */
+export function resolveInteraction(
+  obj: Object3D,
+  clipNames: string[],
+  manual: Record<string, ManualInteraction>,
+): InteractionConfig | null {
+  const m = manual[obj.uuid];
+  if (m) return manualToConfig(m, displayLabel(obj));
+
+  const ud = parseUserDataInteraction(obj);
+  if (ud) {
+    // type 'animation' tanpa clip eksplisit → coba cocokkan dari nama node.
+    if (ud.type === 'animation' && !ud.clip) ud.clip = findMatchingClip(obj, clipNames);
+    return ud;
+  }
+
+  if (obj.name.startsWith(INT_PREFIX)) {
+    const clip = findMatchingClip(obj, clipNames);
+    if (clip) {
+      return { type: 'animation', axis: 'y', clip, label: displayLabel(obj), duration: 0.6, source: 'convention' };
+    }
+    // Tanpa clip → default rotate 90° pada sumbu Y.
+    return {
+      type: 'rotate',
+      axis: 'y',
+      angle: DEFAULT_ANGLE,
+      label: displayLabel(obj),
+      duration: 0.6,
+      source: 'convention',
+    };
+  }
+
+  return null;
+}
+
+export interface InteractiveEntry {
+  uuid: string;
+  obj: Object3D;
+  config: InteractionConfig;
+}
+
+/** Bangun daftar node interaktif pada sebuah scene (generik, data-driven). */
+export function buildInteractiveList(
+  root: Object3D,
+  clipNames: string[],
+  manual: Record<string, ManualInteraction>,
+): InteractiveEntry[] {
+  const list: InteractiveEntry[] = [];
+  root.traverse((o) => {
+    const config = resolveInteraction(o, clipNames, manual);
+    if (config) list.push({ uuid: o.uuid, obj: o, config });
+  });
+  return list;
 }
 
 /**

@@ -11,6 +11,7 @@ import {
 } from 'three';
 import type { AnimationApi, LoopMode, PlaybackInfo } from '@/types/viewer';
 import { useViewerStore } from '@/store/viewerStore';
+import { setMixerRuntime } from '@/lib/mixerRegistry';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 const CROSSFADE = 0.3;
@@ -49,6 +50,8 @@ export function useAnimationController(gltf: GLTF, scene: Object3D): void {
   useEffect(() => {
     const clips = gltf.animations.map((c) => ({ name: c.name, duration: c.duration }));
     setClips(clips);
+    // Bagikan mixer & actions ke InteractionController (interaksi berbasis clip).
+    setMixerRuntime(mixer, actions);
 
     // Inisialisasi state & publish awal.
     for (const c of clips) {
@@ -189,6 +192,7 @@ export function useAnimationController(gltf: GLTF, scene: Object3D): void {
     return () => {
       mixer.removeEventListener('finished', onFinished);
       setAnimApi(null);
+      setMixerRuntime(null, {});
       if (animatingRef.current) {
         animatingRef.current = false;
         setAnimating(false);
