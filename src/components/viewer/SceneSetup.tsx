@@ -51,6 +51,10 @@ export function SceneSetup() {
   // Skala shadow/grid/light mengikuti ukuran model (generik untuk model apa pun).
   const shadowScale = Math.max(2, radius * 3);
   const shadowCam = Math.max(2, radius * 2);
+  // ContactShadows membuat render target di useMemo([resolution,width,height,scale,color])
+  // dan TIDAK men-dispose-nya → mengubah `scale` per model membocorkan texture. Maka props
+  // ContactShadows dibuat KONSTAN dan penskalaan dilakukan lewat <group scale> pembungkus.
+  const shadowGroupScale = Math.max(1, radius * 1.5);
 
   return (
     <>
@@ -77,15 +81,18 @@ export function SceneSetup() {
       </directionalLight>
 
       {settings.shadows && (
-        <ContactShadows
-          position={[0, 0, 0]}
-          opacity={0.5}
-          scale={shadowScale}
-          blur={2.6}
-          far={Math.max(2, radius * 2)}
-          resolution={1024}
-          color="#000000"
-        />
+        // Props ContactShadows konstan (RT dibuat sekali); ukuran via group scale.
+        <group scale={shadowGroupScale}>
+          <ContactShadows
+            position={[0, 0, 0]}
+            opacity={0.5}
+            scale={4}
+            blur={2.6}
+            far={2}
+            resolution={1024}
+            color="#000000"
+          />
+        </group>
       )}
 
       {settings.grid && (

@@ -195,3 +195,21 @@ update PROGRESS.md, lalu git commit.
 - Verifikasi browser: wireframe & grid aktif, environment sunset, screenshot tanpa error,
   reset kamera, bottom sheet drag → expand. 0 error konsol.
 - Gate: typecheck ✔, lint ✔, build ✔.
+
+### Tahap 8 — Optimasi Akhir ✅
+- **frameloop demand** diverifikasi: saat idle (tanpa animasi/interaksi/gerak kamera),
+  `gl.info.render.frame` TIDAK bertambah (0/detik). Saat animasi/interaksi → `always`.
+- **Memory leak ditemukan & diperbaiki (penting):** uji ganti model 5× berturut menunjukkan
+  `textures` naik +2 tiap ganti model berukuran beda. Penyebab: drei `ContactShadows` membuat
+  2 WebGLRenderTarget di `useMemo([resolution,width,height,scale,color])` dan **tidak pernah
+  dispose**; `scale` kami ikut `modelRadius` → bocor. **Perbaikan:** props ContactShadows
+  dibuat konstan (RT dibuat sekali), penskalaan lewat `<group scale>` pembungkus. Hasil uji
+  5× ganti model: textures tetap 8, geometries tetap 13 (tidak menumpuk). Geometry model lama
+  juga ter-dispose (sudah dari tahap 3).
+- **Bundle (production):** dipisah vendor untuk caching — app `index` 51 kB (gzip **17 kB**),
+  `vendor-three` 893 kB (gzip 241 kB), `vendor-r3f` 500 kB (gzip 160 kB). HDRI & decoder Draco/
+  KTX2 lazy per-kebutuhan. `r3f-perf` ter-tree-shake dari produksi (DEV-guard). Tidak ada
+  `console.log` tertinggal.
+- **Catatan:** `@react-three/postprocessing` terpasang (stack wajib) tetapi tidak dipakai —
+  highlight memakai emissive (diizinkan spec sebagai alternatif outline), jadi tidak ikut bundle.
+- Gate: typecheck ✔, lint ✔, build ✔.

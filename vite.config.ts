@@ -14,5 +14,14 @@ export default defineConfig({
   build: {
     // Three.js + R3F menghasilkan chunk besar; naikkan ambang peringatan.
     chunkSizeWarningLimit: 1500,
+    rollupOptions: {
+      output: {
+        // Pisahkan vendor besar agar cache lebih stabil saat kode app berubah.
+        manualChunks(id) {
+          if (id.includes('node_modules/three/')) return 'vendor-three';
+          if (id.includes('@react-three')) return 'vendor-r3f';
+        },
+      },
+    },
   },
 });

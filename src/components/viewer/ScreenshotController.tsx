@@ -57,5 +57,13 @@ export function ScreenshotController() {
     captureAndDownload(gl, scene, camera);
   }, [nonce, gl, scene, camera]);
 
+  // Expose renderer hidup untuk debugging/uji memory-leak (lihat PROGRESS tahap 8).
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      (window as unknown as { __gl?: unknown }).__gl = gl;
+    }
+  }, [gl]);
+
   return null;
 }
+
