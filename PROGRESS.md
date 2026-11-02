@@ -123,3 +123,22 @@ update PROGRESS.md, lalu git commit.
 - Verifikasi browser: ganti model (geometries 14→7, tidak menumpuk), overlay loading muncul
   & hilang, error toast + pulih ke sample, 0 error konsol di tab bersih.
 - Gate: typecheck ✔, lint ✔, build ✔.
+
+### Tahap 4 — ModelInfoPanel + SceneTreePanel ✅
+- `hooks/useModelStats.ts`: hitung mesh, triangle (index/pos), material & tekstur unik +
+  resolusi terbesar, dimensi bbox (m), jumlah animasi, deteksi Draco/KTX2/Meshopt dari
+  `gltf.parser.json.extensionsUsed`, peringatan (triangle>500k, tekstur>2048px, file>50MB).
+- `ModelInfoPanel`: semua statistik + badge kompресi + peringatan kuning.
+- `SceneTreePanel`: tree collapsible, ikon per tipe (mesh/group), search/filter (auto-expand
+  cabang cocok), toggle visibility per node (mutasi `obj.visible` + `invalidate`), klik →
+  select + fokus kamera, badge `INT` untuk node interaktif (`hasInteractionHint`).
+- `lib/interactions.ts`: parser konvensi (INT_ prefix, userData extras), `displayLabel`,
+  `findInteractiveAncestor` (dipakai tahap 6).
+- Scene diekspos ke store (`sceneRoot`) agar panel di luar canvas bisa membacanya; fokus
+  kamera via `focusNode` + `BoundsRefitter` (`bounds.refresh(target).fit()`).
+- `layout/Section.tsx`: accordion reusable (label mono kapital).
+- **Keputusan:** lint React Compiler menandai mutasi `obj.visible` (prop) → di-disable
+  setempat dengan komentar, karena mutasi objek three.js memang disengaja (bukan state React).
+- Verifikasi browser: statistik benar (11 mesh, 132 tri, 1 animasi, kompresi none),
+  tree + badge INT, search "samping" memfilter, klik Laci → kamera fokus. 0 error baru.
+- Gate: typecheck ✔, lint ✔, build ✔.

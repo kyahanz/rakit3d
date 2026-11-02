@@ -1,9 +1,12 @@
 import { useViewerStore } from '@/store/viewerStore';
 import { formatBytes } from '@/lib/formatters';
+import { Section } from './Section';
+import { ModelInfoPanel } from '@/components/panels/ModelInfoPanel';
+import { SceneTreePanel } from '@/components/panels/SceneTreePanel';
 
 /**
- * Panel kiri. Diisi bertahap dengan ModelInfo, SceneTree, Animation, Settings,
- * dan Assembly pada tahap-tahap berikutnya.
+ * Panel kiri. Berisi info model & scene tree (tahap 4). Animation, Settings, dan
+ * Assembly ditambahkan pada tahap berikutnya.
  */
 export function Sidebar() {
   const model = useViewerStore((s) => s.model);
@@ -17,8 +20,14 @@ export function Sidebar() {
           {model.size ? ` · ${formatBytes(model.size)}` : ''}
         </p>
       </div>
-      <div className="scrollbar-thin flex-1 overflow-y-auto p-4 text-sm opacity-70">
-        Panel akan terisi pada tahap berikutnya.
+
+      <div className="scrollbar-thin flex-1 overflow-y-auto">
+        <Section title="Info Model">
+          <ModelInfoPanel />
+        </Section>
+        <Section title="Scene Tree">
+          <SceneTreePanel />
+        </Section>
       </div>
     </aside>
   );

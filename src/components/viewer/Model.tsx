@@ -4,6 +4,7 @@ import { Box3, type Group, type Mesh, type Object3D, Sphere, Vector3 } from 'thr
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { useViewerStore } from '@/store/viewerStore';
 import { useDisposeOnChange } from '@/hooks/useDisposeOnChange';
+import { useModelStats } from '@/hooks/useModelStats';
 import type { ModelSource } from '@/types/viewer';
 
 function isMesh(o: Object3D): o is Mesh {
@@ -26,9 +27,17 @@ export function Model({ gltf, source }: ModelProps) {
   const setModelRadius = useViewerStore((s) => s.setModelRadius);
   const setLoading = useViewerStore((s) => s.setLoading);
   const setLastGoodModel = useViewerStore((s) => s.setLastGoodModel);
+  const setSceneRoot = useViewerStore((s) => s.setSceneRoot);
 
   // Dispose model lama + clear cache + revoke URL saat model berganti.
   useDisposeOnChange(source, scene);
+  // Hitung statistik model (mesh, triangle, tekstur, dimensi, ekstensi kompresi).
+  useModelStats(gltf, source.size);
+
+  // Ekspos root scene ke store untuk panel di luar canvas (tree/info).
+  useEffect(() => {
+    setSceneRoot(scene);
+  }, [scene, setSceneRoot]);
 
   // Model berhasil tampil → matikan overlay loading & catat sebagai model baik terakhir.
   useEffect(() => {

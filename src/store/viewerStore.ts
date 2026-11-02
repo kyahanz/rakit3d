@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { Object3D } from 'three';
 import type { ModelSource, ModelStats, ViewerSettings } from '@/types/viewer';
 
 /** Model contoh bawaan yang tampil saat pertama dibuka. */
@@ -35,6 +36,13 @@ interface ViewerState {
   stats: ModelStats | null;
   /** Radius bounding sphere model (meter) untuk batas zoom relatif. */
   modelRadius: number;
+  /** Root scene model yang sedang tampil (untuk panel tree/info di luar canvas). */
+  sceneRoot: Object3D | null;
+  /** uuid node yang dipilih di scene tree. */
+  selectedUuid: string | null;
+  /** Node target fokus kamera + nonce pemicu. */
+  focusTarget: Object3D | null;
+  focusNonce: number;
 
   // --- Loading & error ---
   loading: LoadingState;
@@ -53,6 +61,9 @@ interface ViewerState {
   setLastGoodModel: (model: ModelSource) => void;
   setStats: (stats: ModelStats | null) => void;
   setModelRadius: (r: number) => void;
+  setSceneRoot: (root: Object3D | null) => void;
+  setSelected: (uuid: string | null) => void;
+  focusNode: (node: Object3D | null) => void;
   setLoading: (loading: Partial<LoadingState>) => void;
   setError: (error: string | null) => void;
   setNotice: (notice: string | null) => void;
@@ -67,6 +78,10 @@ export const useViewerStore = create<ViewerState>((set) => ({
   lastGoodModel: SAMPLE_MODEL,
   stats: null,
   modelRadius: 1,
+  sceneRoot: null,
+  selectedUuid: null,
+  focusTarget: null,
+  focusNonce: 0,
 
   loading: { active: true, progress: 0, fileName: 'sample.glb' },
   error: null,
@@ -76,10 +91,14 @@ export const useViewerStore = create<ViewerState>((set) => ({
   sidebarOpen: true,
   cameraResetNonce: 0,
 
-  setModel: (model) => set({ model, stats: null, error: null }),
+  setModel: (model) =>
+    set({ model, stats: null, error: null, sceneRoot: null, selectedUuid: null, focusTarget: null }),
   setLastGoodModel: (lastGoodModel) => set({ lastGoodModel }),
   setStats: (stats) => set({ stats }),
   setModelRadius: (modelRadius) => set({ modelRadius }),
+  setSceneRoot: (sceneRoot) => set({ sceneRoot }),
+  setSelected: (selectedUuid) => set({ selectedUuid }),
+  focusNode: (focusTarget) => set((s) => ({ focusTarget, focusNonce: s.focusNonce + 1 })),
   setLoading: (loading) =>
     set((s) => ({ loading: { ...s.loading, ...loading } })),
   setError: (error) => set({ error }),

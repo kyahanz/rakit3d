@@ -2,15 +2,24 @@ import { type ReactNode, useEffect } from 'react';
 import { Bounds, OrbitControls, useBounds } from '@react-three/drei';
 import { useViewerStore } from '@/store/viewerStore';
 
-/** Memanggil fit Bounds ulang saat ada permintaan reset kamera dari toolbar. */
+/** Fit Bounds ulang saat reset kamera (seluruh model) atau fokus ke node terpilih. */
 function BoundsRefitter() {
   const bounds = useBounds();
   const resetNonce = useViewerStore((s) => s.cameraResetNonce);
+  const focusNonce = useViewerStore((s) => s.focusNonce);
 
+  // Reset / fit seluruh model.
   useEffect(() => {
     // refresh() mengukur ulang scene, clip() atur jarak clipping, fit() framing.
     bounds.refresh().clip().fit();
   }, [bounds, resetNonce]);
+
+  // Fokus ke node tertentu (dari SceneTreePanel). Nonce 0 = belum ada fokus.
+  useEffect(() => {
+    if (focusNonce === 0) return;
+    const target = useViewerStore.getState().focusTarget;
+    if (target) bounds.refresh(target).clip().fit();
+  }, [bounds, focusNonce]);
 
   return null;
 }

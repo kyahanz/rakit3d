@@ -46,6 +46,35 @@ export interface ViewerSettings {
   envBlur: number;
 }
 
+/** Sumber konfigurasi interaksi sebuah node. */
+export type InteractionSource = 'userData' | 'convention' | 'manual';
+
+/** Konfigurasi interaksi yang sudah di-resolve untuk sebuah node. */
+export interface InteractionConfig {
+  type: InteractionType;
+  axis: Axis;
+  /** Derajat (untuk rotate). */
+  angle?: number;
+  /** Meter (untuk translate). */
+  distance?: number;
+  /** Nama animation clip (untuk type 'animation'). */
+  clip?: string;
+  /** Label tampilan (tooltip / UI). */
+  label?: string;
+  /** Durasi easing (detik). */
+  duration: number;
+  source: InteractionSource;
+}
+
+/** Override interaksi manual dari UI (SceneTreePanel). */
+export interface ManualInteraction {
+  type: InteractionType;
+  axis: Axis;
+  angle?: number;
+  distance?: number;
+  clip?: string;
+}
+
 /** Peringatan kualitas model (triangle/tekstur berlebih). */
 export interface ModelWarning {
   level: 'warning';
