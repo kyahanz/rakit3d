@@ -12,12 +12,12 @@ import { Model } from './Model';
  * @types/three dan kita bisa memasang decoder sendiri.
  */
 export function ModelLoader() {
-  const url = useViewerStore((s) => s.model.url);
+  const source = useViewerStore((s) => s.model);
   const gl = useThree((s) => s.gl);
 
-  const gltf = useLoader(GLTFLoader, url, (loader) => {
+  const gltf = useLoader(GLTFLoader, source.url, (loader) => {
     configureGLTFLoader(loader, gl);
   });
 
-  return <Model gltf={gltf} />;
+  return <Model gltf={gltf} source={source} />;
 }

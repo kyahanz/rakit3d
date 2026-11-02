@@ -1,8 +1,10 @@
-import { useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { invalidate } from '@react-three/fiber';
 import { Box3, type Group, type Mesh, type Object3D, Sphere, Vector3 } from 'three';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { useViewerStore } from '@/store/viewerStore';
+import { useDisposeOnChange } from '@/hooks/useDisposeOnChange';
+import type { ModelSource } from '@/types/viewer';
 
 function isMesh(o: Object3D): o is Mesh {
   return (o as Mesh).isMesh === true;
@@ -10,6 +12,7 @@ function isMesh(o: Object3D): o is Mesh {
 
 interface ModelProps {
   gltf: GLTF;
+  source: ModelSource;
 }
 
 /**
@@ -17,10 +20,21 @@ interface ModelProps {
  * radius untuk batas zoom, dan mengaktifkan shadow. Interaksi & wireframe
  * ditambahkan pada tahap berikutnya.
  */
-export function Model({ gltf }: ModelProps) {
+export function Model({ gltf, source }: ModelProps) {
   const scene = gltf.scene;
   const groupRef = useRef<Group>(null);
   const setModelRadius = useViewerStore((s) => s.setModelRadius);
+  const setLoading = useViewerStore((s) => s.setLoading);
+  const setLastGoodModel = useViewerStore((s) => s.setLastGoodModel);
+
+  // Dispose model lama + clear cache + revoke URL saat model berganti.
+  useDisposeOnChange(source, scene);
+
+  // Model berhasil tampil → matikan overlay loading & catat sebagai model baik terakhir.
+  useEffect(() => {
+    setLoading({ active: false, progress: 1 });
+    setLastGoodModel(source);
+  }, [source, setLoading, setLastGoodModel]);
 
   useLayoutEffect(() => {
     const box = new Box3().setFromObject(scene);

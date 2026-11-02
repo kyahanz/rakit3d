@@ -101,3 +101,25 @@ update PROGRESS.md, lalu git commit.
   `useLoader`. `<Center>` diganti grounding manual agar model menapak lantai shadow.
 - Verifikasi visual di browser: lemari tampil, auto-fit, shadow, environment; **0 error konsol**.
 - Gate: typecheck ✔, lint ✔, build ✔ (index 1.39 MB / gzip 400 kB; HDRI & decoder lazy).
+
+### Tahap 3 — Drag & Drop + Loading + Error + Dispose ✅
+- `DropZone`: listener drag global (drag file ke mana saja → overlay "Lepas file di sini"),
+  tombol "Pilih File" (input tersembunyi), multi-file (.gltf + .bin + tekstur + .assembly.json).
+- `lib/modelFiles.ts`: validasi ekstensi (.glb/.gltf), object URL per file, `URLModifier`
+  (DefaultLoadingManager) untuk resolve dependency .gltf by basename, peringatan ukuran >50 MB
+  (non-fatal), deteksi file assembly pendamping.
+- `lib/loadModelFiles.ts`: titik masuk tunggal load dari file.
+- `LoadingOverlay`: progress bar + nama file (progress dari DefaultLoadingManager via
+  `useLoadingManager`). `ErrorToast`: error (merah) + peringatan (kuning), auto-dismiss notice.
+- Dispose: `lib/disposeObject.ts` (geometry/material/texture rekursif) + `useDisposeOnChange`
+  (registry level-module, StrictMode-safe: dispose model lama saat model baru terdaftar,
+  `useLoader.clear`, revoke semua object URL). Hindari dispose saat unmount (aman double-mount).
+- `ModelErrorBoundary`: tangkap gagal decode/parse → `handleModelError` (revoke URL gagal,
+  pulihkan `lastGoodModel`, set pesan). **Bug ditemukan & diperbaiki:** `setModel` menghapus
+  `error`, jadi urutan diperbaiki (revert dulu, set error terakhir).
+- **Catatan debugging:** error "reading url of undefined" yang sempat muncul ternyata
+  artefak HMR saat file diedit dengan halaman terbuka — di tab bersih tidak muncul; guard
+  defensif tetap dipertahankan.
+- Verifikasi browser: ganti model (geometries 14→7, tidak menumpuk), overlay loading muncul
+  & hilang, error toast + pulih ke sample, 0 error konsol di tab bersih.
+- Gate: typecheck ✔, lint ✔, build ✔.

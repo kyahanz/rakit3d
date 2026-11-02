@@ -24,8 +24,12 @@ export interface ModelSource {
   isSample?: boolean;
   /** True jika `url` adalah object URL yang harus di-revoke saat ganti model. */
   isObjectUrl?: boolean;
+  /** Semua object URL yang dibuat (gltf + .bin + tekstur) agar bisa di-revoke semua. */
+  objectUrls?: string[];
   /** URL file *.assembly.json pendamping (jika ada → Mode Rakit aktif). */
   assemblyUrl?: string;
+  /** Data assembly yang di-drop langsung (object URL json), dipakai Mode Rakit. */
+  assemblyFromFile?: boolean;
 }
 
 /** Pengaturan tampilan & environment. */

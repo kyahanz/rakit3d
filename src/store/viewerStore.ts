@@ -30,6 +30,8 @@ interface LoadingState {
 interface ViewerState {
   // --- Model ---
   model: ModelSource;
+  /** Model terakhir yang berhasil dimuat (untuk pulih saat load gagal). */
+  lastGoodModel: ModelSource;
   stats: ModelStats | null;
   /** Radius bounding sphere model (meter) untuk batas zoom relatif. */
   modelRadius: number;
@@ -37,6 +39,8 @@ interface ViewerState {
   // --- Loading & error ---
   loading: LoadingState;
   error: string | null;
+  /** Peringatan non-fatal (mis. file besar). */
+  notice: string | null;
 
   // --- UI ---
   settings: ViewerSettings;
@@ -46,10 +50,12 @@ interface ViewerState {
 
   // --- Actions ---
   setModel: (model: ModelSource) => void;
+  setLastGoodModel: (model: ModelSource) => void;
   setStats: (stats: ModelStats | null) => void;
   setModelRadius: (r: number) => void;
   setLoading: (loading: Partial<LoadingState>) => void;
   setError: (error: string | null) => void;
+  setNotice: (notice: string | null) => void;
   updateSettings: (patch: Partial<ViewerSettings>) => void;
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
@@ -58,22 +64,26 @@ interface ViewerState {
 
 export const useViewerStore = create<ViewerState>((set) => ({
   model: SAMPLE_MODEL,
+  lastGoodModel: SAMPLE_MODEL,
   stats: null,
   modelRadius: 1,
 
-  loading: { active: false, progress: 0, fileName: '' },
+  loading: { active: true, progress: 0, fileName: 'sample.glb' },
   error: null,
+  notice: null,
 
   settings: DEFAULT_SETTINGS,
   sidebarOpen: true,
   cameraResetNonce: 0,
 
   setModel: (model) => set({ model, stats: null, error: null }),
+  setLastGoodModel: (lastGoodModel) => set({ lastGoodModel }),
   setStats: (stats) => set({ stats }),
   setModelRadius: (modelRadius) => set({ modelRadius }),
   setLoading: (loading) =>
     set((s) => ({ loading: { ...s.loading, ...loading } })),
   setError: (error) => set({ error }),
+  setNotice: (notice) => set({ notice }),
   updateSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),

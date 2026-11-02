@@ -1,9 +1,14 @@
 import { useViewerStore } from '@/store/viewerStore';
+import { useLoadingManager } from '@/hooks/useLoadingManager';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { ViewerCanvas } from '@/components/viewer/ViewerCanvas';
+import { DropZone } from '@/components/upload/DropZone';
+import { LoadingOverlay } from '@/components/upload/LoadingOverlay';
+import { ErrorToast } from '@/components/upload/ErrorToast';
 
 export default function App() {
   const sidebarOpen = useViewerStore((s) => s.sidebarOpen);
+  useLoadingManager();
 
   return (
     <div className="flex h-full w-full overflow-hidden bg-neutral-100 dark:bg-neutral-950">
@@ -19,6 +24,11 @@ export default function App() {
         <div className="absolute inset-0">
           <ViewerCanvas />
         </div>
+
+        {/* Overlay UI (di luar canvas). */}
+        <DropZone />
+        <LoadingOverlay />
+        <ErrorToast />
       </main>
     </div>
   );
