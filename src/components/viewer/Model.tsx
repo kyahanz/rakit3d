@@ -5,6 +5,7 @@ import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { useViewerStore } from '@/store/viewerStore';
 import { useDisposeOnChange } from '@/hooks/useDisposeOnChange';
 import { useModelStats } from '@/hooks/useModelStats';
+import { useAnimationController } from '@/hooks/useAnimationController';
 import type { ModelSource } from '@/types/viewer';
 
 function isMesh(o: Object3D): o is Mesh {
@@ -33,6 +34,8 @@ export function Model({ gltf, source }: ModelProps) {
   useDisposeOnChange(source, scene);
   // Hitung statistik model (mesh, triangle, tekstur, dimensi, ekstensi kompresi).
   useModelStats(gltf, source.size);
+  // Kontrol animasi bawaan model (mixer) + API ke store untuk AnimationPanel.
+  useAnimationController(gltf, scene);
 
   // Ekspos root scene ke store untuk panel di luar canvas (tree/info).
   useEffect(() => {

@@ -3,6 +3,7 @@ import { formatBytes } from '@/lib/formatters';
 import { Section } from './Section';
 import { ModelInfoPanel } from '@/components/panels/ModelInfoPanel';
 import { SceneTreePanel } from '@/components/panels/SceneTreePanel';
+import { AnimationPanel } from '@/components/panels/AnimationPanel';
 
 /**
  * Panel kiri. Berisi info model & scene tree (tahap 4). Animation, Settings, dan
@@ -27,6 +28,9 @@ export function Sidebar() {
         </Section>
         <Section title="Scene Tree">
           <SceneTreePanel />
+        </Section>
+        <Section title="Animasi">
+          <AnimationPanel />
         </Section>
       </div>
     </aside>

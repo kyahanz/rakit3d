@@ -75,6 +75,32 @@ export interface ManualInteraction {
   clip?: string;
 }
 
+/** Metadata satu animation clip. */
+export interface ClipInfo {
+  name: string;
+  duration: number;
+}
+
+/** Status playback satu clip (dipublish controller untuk UI). */
+export interface PlaybackInfo {
+  playing: boolean;
+  paused: boolean;
+  time: number;
+  loop: LoopMode;
+  speed: number;
+}
+
+/** API imperatif animasi yang dipanggil AnimationPanel (DOM) ke controller (canvas). */
+export interface AnimationApi {
+  play: (name: string) => void;
+  pause: (name: string) => void;
+  stop: (name: string) => void;
+  stopAll: () => void;
+  seek: (name: string, time: number) => void;
+  setSpeed: (name: string, speed: number) => void;
+  setLoop: (name: string, loop: LoopMode) => void;
+}
+
 /** Peringatan kualitas model (triangle/tekstur berlebih). */
 export interface ModelWarning {
   level: 'warning';

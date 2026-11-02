@@ -29,12 +29,14 @@ function handleModelError(message: string): void {
 export function ViewerCanvas() {
   const showPerf = useViewerStore((s) => s.settings.showPerf);
   const modelUrl = useViewerStore((s) => s.model.url);
+  const animating = useViewerStore((s) => s.animating);
 
   return (
     <Canvas
-      // Render hanya saat ada perubahan (hemat GPU). invalidate() dipanggil saat
-      // kamera bergerak, animasi/tween berjalan, atau model berubah.
-      frameloop="demand"
+      // Render on-demand (hemat GPU): invalidate() saat kamera/tween berubah.
+      // Saat animasi berjalan, beralih ke "always" agar mixer ter-update tiap frame,
+      // lalu kembali "demand" otomatis saat semua clip berhenti.
+      frameloop={animating ? 'always' : 'demand'}
       dpr={[1, 2]}
       shadows
       gl={{

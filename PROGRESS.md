@@ -142,3 +142,18 @@ update PROGRESS.md, lalu git commit.
 - Verifikasi browser: statistik benar (11 mesh, 132 tri, 1 animasi, kompresi none),
   tree + badge INT, search "samping" memfilter, klik Laci → kamera fokus. 0 error baru.
 - Gate: typecheck ✔, lint ✔, build ✔.
+
+### Tahap 5 — AnimationPanel ✅
+- `useAnimationController` (dalam canvas): `useAnimations` (drei) → mixer + actions;
+  mengekspos `AnimationApi` ke store (play/pause/stop/stopAll/seek/setSpeed/setLoop).
+  Crossfade 0.3 dtk saat mulai (`fadeIn`), beberapa clip bisa jalan bersamaan.
+  Loop once/repeat/pingpong (`setLoop` + `clampWhenFinished`), event `finished` → stopped.
+- `AnimationPanel` (DOM): daftar clip + durasi, play/pause, stop, loop (1×/∞/⇄), slider
+  kecepatan 0.25–2×, scrubber timeline; tombol "Hentikan semua".
+- **Keputusan penting (render loop):** `invalidate()` di dalam `useFrame` TIDAK menjaga
+  loop demand tetap jalan (animasi membeku setelah ~1 dtk). Solusi: Canvas `frameloop`
+  dinamis — `"always"` saat ada clip bermain (`store.animating`), kembali `"demand"` saat
+  berhenti. Posisi scrubber dipublish throttle (~12 fps), bukan tiap frame (hindari re-render berat).
+- Verifikasi browser: Spin berputar (time 0→0.62 dalam 700ms), stop → animating false &
+  reset, panel lengkap tampil. 0 error baru.
+- Gate: typecheck ✔, lint ✔, build ✔.

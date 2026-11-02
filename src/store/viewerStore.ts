@@ -1,6 +1,13 @@
 import { create } from 'zustand';
 import type { Object3D } from 'three';
-import type { ModelSource, ModelStats, ViewerSettings } from '@/types/viewer';
+import type {
+  AnimationApi,
+  ClipInfo,
+  ModelSource,
+  ModelStats,
+  PlaybackInfo,
+  ViewerSettings,
+} from '@/types/viewer';
 
 /** Model contoh bawaan yang tampil saat pertama dibuka. */
 const SAMPLE_MODEL: ModelSource = {
@@ -44,6 +51,14 @@ interface ViewerState {
   focusTarget: Object3D | null;
   focusNonce: number;
 
+  // --- Animasi ---
+  clips: ClipInfo[];
+  /** Status playback per clip (dipublish controller canvas). */
+  playback: Record<string, PlaybackInfo>;
+  animApi: AnimationApi | null;
+  /** True saat ada animasi/transisi berjalan → Canvas memakai frameloop "always". */
+  animating: boolean;
+
   // --- Loading & error ---
   loading: LoadingState;
   error: string | null;
@@ -64,6 +79,10 @@ interface ViewerState {
   setSceneRoot: (root: Object3D | null) => void;
   setSelected: (uuid: string | null) => void;
   focusNode: (node: Object3D | null) => void;
+  setClips: (clips: ClipInfo[]) => void;
+  setPlayback: (playback: Record<string, PlaybackInfo>) => void;
+  setAnimApi: (api: AnimationApi | null) => void;
+  setAnimating: (animating: boolean) => void;
   setLoading: (loading: Partial<LoadingState>) => void;
   setError: (error: string | null) => void;
   setNotice: (notice: string | null) => void;
@@ -83,6 +102,11 @@ export const useViewerStore = create<ViewerState>((set) => ({
   focusTarget: null,
   focusNonce: 0,
 
+  clips: [],
+  playback: {},
+  animApi: null,
+  animating: false,
+
   loading: { active: true, progress: 0, fileName: 'sample.glb' },
   error: null,
   notice: null,
@@ -92,13 +116,28 @@ export const useViewerStore = create<ViewerState>((set) => ({
   cameraResetNonce: 0,
 
   setModel: (model) =>
-    set({ model, stats: null, error: null, sceneRoot: null, selectedUuid: null, focusTarget: null }),
+    set({
+      model,
+      stats: null,
+      error: null,
+      sceneRoot: null,
+      selectedUuid: null,
+      focusTarget: null,
+      clips: [],
+      playback: {},
+      animApi: null,
+      animating: false,
+    }),
   setLastGoodModel: (lastGoodModel) => set({ lastGoodModel }),
   setStats: (stats) => set({ stats }),
   setModelRadius: (modelRadius) => set({ modelRadius }),
   setSceneRoot: (sceneRoot) => set({ sceneRoot }),
   setSelected: (selectedUuid) => set({ selectedUuid }),
   focusNode: (focusTarget) => set((s) => ({ focusTarget, focusNonce: s.focusNonce + 1 })),
+  setClips: (clips) => set({ clips }),
+  setPlayback: (playback) => set({ playback }),
+  setAnimApi: (animApi) => set({ animApi }),
+  setAnimating: (animating) => set({ animating }),
   setLoading: (loading) =>
     set((s) => ({ loading: { ...s.loading, ...loading } })),
   setError: (error) => set({ error }),
