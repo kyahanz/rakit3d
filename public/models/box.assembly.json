@@ -1,0 +1,77 @@
+{
+  "title": "Kotak Contoh",
+  "subtitle": "Model kedua untuk membuktikan sistem generik. Ukuran mm.",
+  "groups": [
+    {
+      "id": "kotak",
+      "label": "Kotak",
+      "node": "GRP_Kotak",
+      "dims": "600×500×400"
+    }
+  ],
+  "toggles": [
+    {
+      "id": "tutup",
+      "label": "Tutup",
+      "type": "interaction",
+      "nodes": [
+        "INT_Tutup"
+      ],
+      "states": [
+        "tutup",
+        "buka"
+      ]
+    },
+    {
+      "id": "ukuran",
+      "label": "Ukuran",
+      "type": "dimensions"
+    }
+  ],
+  "steps": [
+    {
+      "n": 1,
+      "group": "kotak",
+      "title": "Badan kotak",
+      "desc": "Kotak utama",
+      "nodes": [
+        "Kotak_Badan"
+      ]
+    },
+    {
+      "n": 2,
+      "group": "kotak",
+      "title": "Laci",
+      "desc": "Laci tarik depan",
+      "nodes": [
+        "INT_LaciKotak"
+      ]
+    },
+    {
+      "n": 3,
+      "group": "kotak",
+      "title": "Tutup",
+      "desc": "Engsel belakang",
+      "nodes": [
+        "INT_Tutup"
+      ]
+    }
+  ],
+  "dimensions": [
+    {
+      "id": "kotak_tinggi",
+      "group": "kotak",
+      "from": [
+        -350,
+        0,
+        0
+      ],
+      "to": [
+        -350,
+        400,
+        0
+      ],
+      "label": "400"
+    }
+  ]
+}

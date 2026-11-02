@@ -1,0 +1,143 @@
+{
+  "title": "Lemari Contoh",
+  "subtitle": "Model uji Mode Rakit. Semua ukuran mm.",
+  "groups": [
+    {
+      "id": "lemari",
+      "label": "Lemari",
+      "node": "GRP_Lemari",
+      "dims": "1000×580×2000"
+    }
+  ],
+  "toggles": [
+    {
+      "id": "pintu",
+      "label": "Pintu",
+      "type": "interaction",
+      "nodes": [
+        "INT_Pintu"
+      ],
+      "states": [
+        "tutup",
+        "buka"
+      ]
+    },
+    {
+      "id": "ukuran",
+      "label": "Ukuran",
+      "type": "dimensions"
+    },
+    {
+      "id": "isi",
+      "label": "Isi lemari",
+      "type": "visibility",
+      "nodes": [
+        "GRP_Isi_Lemari"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "n": 1,
+      "group": "lemari",
+      "title": "Plint (kaki lemari)",
+      "desc": "Tinggi 90, depan mundur 22",
+      "nodes": [
+        "Lemari_Plint"
+      ]
+    },
+    {
+      "n": 2,
+      "group": "lemari",
+      "title": "Alas",
+      "desc": "Panel dasar di atas plint",
+      "nodes": [
+        "Lemari_Alas"
+      ]
+    },
+    {
+      "n": 3,
+      "group": "lemari",
+      "title": "Samping kiri & kanan",
+      "desc": "Dua panel vertikal",
+      "nodes": [
+        "Lemari_SampingKiri",
+        "Lemari_SampingKanan"
+      ]
+    },
+    {
+      "n": 4,
+      "group": "lemari",
+      "title": "Atas",
+      "desc": "Panel penutup atas",
+      "nodes": [
+        "Lemari_Atas"
+      ]
+    },
+    {
+      "n": 5,
+      "group": "lemari",
+      "title": "Backing",
+      "desc": "Panel belakang tipis",
+      "nodes": [
+        "Lemari_Backing"
+      ]
+    },
+    {
+      "n": 6,
+      "group": "lemari",
+      "title": "Pintu",
+      "desc": "Dipasang di engsel kiri",
+      "nodes": [
+        "INT_Pintu"
+      ]
+    }
+  ],
+  "dimensions": [
+    {
+      "id": "lemari_tinggi",
+      "group": "lemari",
+      "from": [
+        -600,
+        0,
+        0
+      ],
+      "to": [
+        -600,
+        2000,
+        0
+      ],
+      "label": "2000"
+    },
+    {
+      "id": "lemari_lebar",
+      "group": "lemari",
+      "from": [
+        -500,
+        2100,
+        0
+      ],
+      "to": [
+        500,
+        2100,
+        0
+      ],
+      "label": "1000"
+    },
+    {
+      "id": "lemari_dalam",
+      "group": "lemari",
+      "from": [
+        600,
+        0,
+        -290
+      ],
+      "to": [
+        600,
+        0,
+        290
+      ],
+      "label": "580"
+    }
+  ]
+}

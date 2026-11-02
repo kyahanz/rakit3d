@@ -74,3 +74,30 @@ update PROGRESS.md, lalu git commit.
     `plugins` bergaya array (eslintrc) yang ditolak flat config bila dipakai di `extends`;
     solusinya daftarkan plugin manual + spread `.rules` saja.
 - Gate: typecheck ✔, lint ✔, build ✔ (JS 223 kB / gzip 69.5 kB — baseline sebelum 3D).
+
+### Tahap 2 — Viewer + Scene + Auto-fit ✅
+- **Model contoh dibuat lebih awal** (`scripts/generate-sample.mjs`, pakai gltf-transform):
+  - `public/models/sample.glb` — lemari multi-part (plint, alas, samping, atas, backing,
+    rak dalam `GRP_Isi_Lemari`, pintu `INT_Pintu` engsel kiri, laci `INT_Laci` translate,
+    spinner animasi `Spin`) + `sample.assembly.json` (6 langkah).
+  - `public/models/box.glb` — kotak dengan tutup `INT_Tutup` (clip `INT_Tutup_Open`) & laci
+    `INT_LaciKotak` + `box.assembly.json`. Model kedua untuk bukti sistem generik.
+  - Divalidasi: nama node, userData extras, dan animasi terbaca benar.
+- `lib/loaders.ts`: GLTFLoader + DRACO (`/draco/`) + KTX2 (`/basis/`, `detectSupport(gl)`)
+  + MeshoptDecoder; instance decoder dipakai ulang.
+- `ViewerCanvas`: `frameloop="demand"`, `dpr=[1,2]`, `PerformanceMonitor` + `AdaptiveDpr`,
+  gl ACESFilmic + SRGB + high-performance. `Perf` (r3f-perf) hanya dev & saat diaktifkan.
+- `SceneSetup`: Environment HDRI (**@pmndrs/assets**, data URI EXR lokal — bukan CDN; tiap
+  preset lazy chunk), directional light shadow + ambient, `ContactShadows`, `Grid` opsional.
+  Skala shadow/grid/light mengikuti `modelRadius` (generik).
+- `CameraRig`: `OrbitControls` damping + `makeDefault`, batas zoom relatif `modelRadius`,
+  `maxPolarAngle` agar tak menembus lantai; `<Bounds fit clip observe>` auto-fit +
+  `BoundsRefitter` untuk reset kamera (via `cameraResetNonce`).
+- `Model`: pusatkan X/Z & grounding ke y=0 (pengganti `<Center>` yang juga menapak lantai),
+  hitung `modelRadius`, aktifkan shadow semua mesh, `invalidate()`.
+- `ModelLoader`: pakai `useLoader(GLTFLoader)` dari fiber (bukan drei `useGLTF`) agar tipe
+  loader konsisten dengan @types/three dan decoder self-hosted bisa dipasang.
+- **Keputusan:** drei `useGLTF`/three-stdlib bentrok tipe dengan @types/three → pakai
+  `useLoader`. `<Center>` diganti grounding manual agar model menapak lantai shadow.
+- Verifikasi visual di browser: lemari tampil, auto-fit, shadow, environment; **0 error konsol**.
+- Gate: typecheck ✔, lint ✔, build ✔ (index 1.39 MB / gzip 400 kB; HDRI & decoder lazy).
