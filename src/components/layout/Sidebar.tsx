@@ -1,3 +1,4 @@
+import { PanelLeftClose } from 'lucide-react';
 import { useViewerStore } from '@/store/viewerStore';
 import { formatBytes } from '@/lib/formatters';
 import { Section } from './Section';
@@ -15,15 +16,27 @@ import { AssemblyPanel } from '@/components/panels/AssemblyPanel';
 export function Sidebar() {
   const model = useViewerStore((s) => s.model);
   const hasAssembly = useViewerStore((s) => s.assembly !== null);
+  const setSidebarOpen = useViewerStore((s) => s.setSidebarOpen);
 
   return (
     <aside className="flex h-full w-full flex-col overflow-hidden bg-white text-neutral-900 dark:bg-neutral-900 dark:text-neutral-100">
-      <div className="border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
-        <h1 className="text-sm font-semibold tracking-tight">3D Model Viewer</h1>
-        <p className="mt-0.5 truncate text-xs opacity-60" title={model.name}>
-          {model.name}
-          {model.size ? ` · ${formatBytes(model.size)}` : ''}
-        </p>
+      <div className="flex items-center gap-2 border-b border-neutral-200 px-3 py-3 dark:border-neutral-800">
+        <button
+          type="button"
+          onClick={() => setSidebarOpen(false)}
+          aria-label="Sembunyikan panel"
+          title="Sembunyikan panel"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-neutral-500 hover:bg-neutral-500/10 hover:text-neutral-800 dark:hover:text-neutral-100"
+        >
+          <PanelLeftClose className="h-4 w-4" />
+        </button>
+        <div className="min-w-0">
+          <h1 className="text-sm font-semibold tracking-tight">3D Model Viewer</h1>
+          <p className="truncate text-xs opacity-60" title={model.name}>
+            {model.name}
+            {model.size ? ` · ${formatBytes(model.size)}` : ''}
+          </p>
+        </div>
       </div>
 
       <div className="scrollbar-thin flex-1 overflow-y-auto">

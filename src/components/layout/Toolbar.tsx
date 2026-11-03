@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Camera, Maximize, Minimize, PanelLeftClose, PanelLeftOpen, Scan } from 'lucide-react';
+import { Camera, Maximize, Minimize, RotateCcw } from 'lucide-react';
 import { useViewerStore } from '@/store/viewerStore';
 
 function IconButton({
@@ -25,8 +25,6 @@ function IconButton({
 }
 
 export function Toolbar() {
-  const toggleSidebar = useViewerStore((s) => s.toggleSidebar);
-  const sidebarOpen = useViewerStore((s) => s.sidebarOpen);
   const resetCamera = useViewerStore((s) => s.resetCamera);
   const requestScreenshot = useViewerStore((s) => s.requestScreenshot);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -47,18 +45,8 @@ export function Toolbar() {
 
   return (
     <div className="absolute top-3 right-3 z-20 flex gap-1.5">
-      <IconButton
-        label={sidebarOpen ? 'Sembunyikan panel' : 'Tampilkan panel'}
-        onClick={toggleSidebar}
-      >
-        {sidebarOpen ? (
-          <PanelLeftClose className="h-4 w-4" />
-        ) : (
-          <PanelLeftOpen className="h-4 w-4" />
-        )}
-      </IconButton>
       <IconButton label="Reset kamera" onClick={resetCamera}>
-        <Scan className="h-4 w-4" />
+        <RotateCcw className="h-4 w-4" />
       </IconButton>
       <IconButton label="Screenshot PNG" onClick={requestScreenshot}>
         <Camera className="h-4 w-4" />

@@ -1,3 +1,4 @@
+import { PanelLeftOpen } from 'lucide-react';
 import { useViewerStore } from '@/store/viewerStore';
 import { useLoadingManager } from '@/hooks/useLoadingManager';
 import { useAssembly } from '@/hooks/useAssembly';
@@ -12,6 +13,7 @@ import { InteractionTooltip } from '@/components/viewer/InteractionTooltip';
 
 export default function App() {
   const sidebarOpen = useViewerStore((s) => s.sidebarOpen);
+  const setSidebarOpen = useViewerStore((s) => s.setSidebarOpen);
   useLoadingManager();
   useAssembly();
 
@@ -30,6 +32,19 @@ export default function App() {
         <div className="absolute inset-0">
           <ViewerCanvas />
         </div>
+
+        {/* Tombol tampilkan panel — muncul di kiri-atas saat panel disembunyikan. */}
+        {!sidebarOpen && (
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Tampilkan panel"
+            title="Tampilkan panel"
+            className="absolute top-3 left-3 z-20 flex h-9 w-9 items-center justify-center rounded-lg bg-white/90 text-neutral-700 shadow-sm backdrop-blur transition hover:bg-white hover:text-neutral-900 dark:bg-neutral-800/90 dark:text-neutral-200 dark:hover:bg-neutral-800"
+          >
+            <PanelLeftOpen className="h-4 w-4" />
+          </button>
+        )}
 
         {/* Overlay UI (di luar canvas). */}
         <Toolbar />
