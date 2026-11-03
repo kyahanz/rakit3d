@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { invalidate, useFrame, type ThreeEvent } from '@react-three/fiber';
-import { Box3, type Group, type Mesh, type Object3D, Sphere, Vector3 } from 'three';
+import {
+  Box3,
+  type Color,
+  type Group,
+  type Mesh,
+  type Object3D,
+  Sphere,
+  type Texture,
+  Vector3,
+} from 'three';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { useViewerStore } from '@/store/viewerStore';
 import { useDisposeOnChange } from '@/hooks/useDisposeOnChange';
@@ -16,8 +25,73 @@ import type { ModelSource } from '@/types/viewer';
 
 const CLICK_THRESHOLD = 6; // px — di atas ini dianggap drag kamera, bukan klik.
 
+// Warna seragam untuk semua garis wireframe (agar topologi mudah dibaca,
+// tidak mengikuti warna/tekstur objek — mirip inspector Sketchfab).
+const WIREFRAME_COLOR = '#2b6cff';
+
+interface WireframeMaterial {
+  wireframe?: boolean;
+  color?: Color;
+  emissive?: Color;
+  emissiveIntensity?: number;
+  map?: Texture | null;
+  vertexColors?: boolean;
+  needsUpdate?: boolean;
+}
+
+// Snapshot nilai material asli agar bisa dipulihkan saat wireframe dimatikan.
+interface WireframeSnapshot {
+  color?: Color;
+  emissive?: Color;
+  emissiveIntensity?: number;
+  map?: Texture | null;
+  vertexColors?: boolean;
+}
+
+const wireframeOriginals = new WeakMap<WireframeMaterial, WireframeSnapshot>();
+
 function isMesh(o: Object3D): o is Mesh {
   return (o as Mesh).isMesh === true;
+}
+
+// Aktifkan/matikan wireframe satu-warna pada sebuah material.
+function applyWireframe(m: WireframeMaterial, on: boolean): void {
+  if (!('wireframe' in m)) return;
+  if (on) {
+    if (!wireframeOriginals.has(m)) {
+      wireframeOriginals.set(m, {
+        color: m.color?.clone(),
+        emissive: m.emissive?.clone(),
+        emissiveIntensity: m.emissiveIntensity,
+        map: m.map ?? null,
+        vertexColors: m.vertexColors,
+      });
+    }
+    m.wireframe = true;
+    // Paksa warna seragam: matikan tekstur & vertex color, set warna + emissive sama.
+    if (m.map !== undefined) m.map = null;
+    if (m.vertexColors !== undefined) m.vertexColors = false;
+    m.color?.set(WIREFRAME_COLOR);
+    m.emissive?.set(WIREFRAME_COLOR);
+    if (m.emissiveIntensity !== undefined) m.emissiveIntensity = 1;
+    m.needsUpdate = true;
+  } else {
+    const orig = wireframeOriginals.get(m);
+    m.wireframe = false;
+    if (orig) {
+      if (orig.color && m.color) m.color.copy(orig.color);
+      if (orig.emissive && m.emissive) m.emissive.copy(orig.emissive);
+      if (m.emissiveIntensity !== undefined && orig.emissiveIntensity !== undefined) {
+        m.emissiveIntensity = orig.emissiveIntensity;
+      }
+      if (m.map !== undefined) m.map = orig.map ?? null;
+      if (m.vertexColors !== undefined && orig.vertexColors !== undefined) {
+        m.vertexColors = orig.vertexColors;
+      }
+      wireframeOriginals.delete(m);
+      m.needsUpdate = true;
+    }
+  }
 }
 
 interface ModelProps {
@@ -63,16 +137,27 @@ export function Model({ gltf, source }: ModelProps) {
   });
 
   // Terapkan wireframe ke semua material saat setting berubah.
+  // Agar topologi mudah dibaca, garis wireframe dipaksa SATU warna seragam
+  // (tidak mengikuti warna/tekstur objek). Nilai asli material disimpan di
+  // WeakMap lalu dipulihkan saat wireframe dimatikan / model berganti.
   useEffect(() => {
     scene.traverse((o) => {
       if (!isMesh(o)) return;
       const mats = Array.isArray(o.material) ? o.material : [o.material];
       for (const m of mats) {
-        const wf = m as { wireframe?: boolean };
-        if ('wireframe' in wf) wf.wireframe = wireframe;
+        if (!m || !('wireframe' in m)) continue;
+        applyWireframe(m as WireframeMaterial, wireframe);
       }
     });
     invalidate();
+    return () => {
+      // Pulihkan material saat efek di-cleanup (model berganti / unmount).
+      scene.traverse((o) => {
+        if (!isMesh(o)) return;
+        const mats = Array.isArray(o.material) ? o.material : [o.material];
+        for (const m of mats) applyWireframe(m as WireframeMaterial, false);
+      });
+    };
   }, [scene, wireframe]);
 
   // Model berhasil tampil → matikan overlay & catat sebagai model baik terakhir.

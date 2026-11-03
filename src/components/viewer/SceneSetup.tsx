@@ -1,7 +1,20 @@
 import { useEffect, useReducer } from 'react';
+import { invalidate } from '@react-three/fiber';
 import { ContactShadows, Environment, Grid } from '@react-three/drei';
 import { useViewerStore } from '@/store/viewerStore';
 import type { EnvironmentPreset } from '@/types/viewer';
+
+// Dalam frameloop "demand", drei <Environment> menerapkan env map lewat efek
+// yang jalan SETELAH frame kita, jadi perubahan tak tampak sampai ada interaksi.
+// Paksa render beberapa frame berikutnya agar env/background langsung terlihat.
+function invalidateNextFrames(times = 3): void {
+  let n = 0;
+  const tick = () => {
+    invalidate();
+    if (++n < times) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
 
 // Lazy import tiap HDRI (data URI EXR dari @pmndrs/assets) → di-host lokal, bukan CDN.
 // Setiap preset jadi chunk terpisah yang dimuat saat dipilih.
@@ -39,6 +52,11 @@ function EnvironmentSetup({ preset, background, blur }: EnvironmentSetupProps) {
     };
   }, [preset]);
 
+  // Paksa re-render saat HDRI siap / background / blur berubah (frameloop demand).
+  useEffect(() => {
+    invalidateNextFrames();
+  }, [uri, background, blur]);
+
   if (!uri) return null;
   // drei mengenali data URI EXR (prefix data:application/exr) dan memakai EXRLoader.
   return <Environment files={uri} background={background} blur={blur} />;
@@ -47,6 +65,12 @@ function EnvironmentSetup({ preset, background, blur }: EnvironmentSetupProps) {
 export function SceneSetup() {
   const settings = useViewerStore((s) => s.settings);
   const radius = useViewerStore((s) => s.modelRadius);
+
+  // Perubahan latar (mode warna/environment, warna, grid) juga perlu memaksa
+  // render di frameloop demand agar langsung tampak tanpa menggerakkan kamera.
+  useEffect(() => {
+    invalidateNextFrames();
+  }, [settings.background, settings.backgroundColor, settings.grid, settings.environment]);
 
   // Skala shadow/grid/light mengikuti ukuran model (generik untuk model apa pun).
   const shadowScale = Math.max(2, radius * 3);
