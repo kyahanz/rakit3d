@@ -2,6 +2,7 @@ import { PanelLeftClose } from 'lucide-react';
 import { useViewerStore } from '@/store/viewerStore';
 import { formatBytes } from '@/lib/formatters';
 import { Section } from './Section';
+import { FilePickerButton } from '@/components/upload/FilePickerButton';
 import { ModelInfoPanel } from '@/components/panels/ModelInfoPanel';
 import { SceneTreePanel } from '@/components/panels/SceneTreePanel';
 import { AnimationPanel } from '@/components/panels/AnimationPanel';
@@ -37,6 +38,11 @@ export function Sidebar() {
             {model.size ? ` · ${formatBytes(model.size)}` : ''}
           </p>
         </div>
+      </div>
+
+      {/* Aksi utama: pilih file (dipindah dari canvas ke panel biar lebih clean). */}
+      <div className="border-b border-neutral-200 px-3 py-2.5 dark:border-neutral-800">
+        <FilePickerButton />
       </div>
 
       <div className="scrollbar-thin flex-1 overflow-y-auto">

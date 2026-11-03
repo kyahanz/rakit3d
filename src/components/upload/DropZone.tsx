@@ -3,14 +3,12 @@ import { Upload } from 'lucide-react';
 import { loadModelFromFiles } from '@/lib/loadModelFiles';
 
 /**
- * Drag & drop fullscreen + tombol "Pilih File".
- * - Drag file ke mana saja → overlay "Lepas file di sini".
- * - Mendukung drop banyak file (.gltf + .bin + tekstur + .assembly.json).
+ * Overlay drag & drop fullscreen. Tombol "Pilih File" ada di dalam panel
+ * (lihat FilePickerButton). Drag file ke mana saja → overlay "Lepas file di sini".
  */
 export function DropZone() {
   const [dragging, setDragging] = useState(false);
   const dragDepth = useRef(0);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFiles = useCallback((files: FileList | File[]) => {
     loadModelFromFiles(files);
@@ -54,41 +52,15 @@ export function DropZone() {
     };
   }, [handleFiles]);
 
+  if (!dragging) return null;
+
   return (
-    <>
-      <input
-        ref={inputRef}
-        type="file"
-        accept=".glb,.gltf,.bin,.png,.jpg,.jpeg,.webp,.ktx2,.json"
-        multiple
-        className="hidden"
-        onChange={(e) => {
-          if (e.target.files && e.target.files.length > 0) handleFiles(e.target.files);
-          e.target.value = '';
-        }}
-      />
-
-      {/* Tombol pilih file (mengambang kiri-bawah; Toolbar juga bisa memicu input ini). */}
-      <button
-        type="button"
-        onClick={() => inputRef.current?.click()}
-        className="pointer-events-auto absolute bottom-4 left-4 z-20 flex items-center gap-2 rounded-lg bg-neutral-900/90 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur transition hover:bg-neutral-900 dark:bg-white/90 dark:text-neutral-900 dark:hover:bg-white"
-        aria-label="Pilih berkas model GLB atau GLTF"
-      >
-        <Upload className="h-4 w-4" aria-hidden />
-        Pilih File
-      </button>
-
-      {/* Overlay drag */}
-      {dragging && (
-        <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-neutral-950/70 backdrop-blur-sm">
-          <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-white/70 px-10 py-8 text-white">
-            <Upload className="h-10 w-10" aria-hidden />
-            <p className="text-lg font-semibold">Lepas file di sini</p>
-            <p className="text-sm opacity-80">.glb atau .gltf (boleh beserta .bin & tekstur)</p>
-          </div>
-        </div>
-      )}
-    </>
+    <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-neutral-950/70 backdrop-blur-sm">
+      <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-white/70 px-10 py-8 text-white">
+        <Upload className="h-10 w-10" aria-hidden />
+        <p className="text-lg font-semibold">Lepas file di sini</p>
+        <p className="text-sm opacity-80">.glb atau .gltf (boleh beserta .bin & tekstur)</p>
+      </div>
+    </div>
   );
 }
