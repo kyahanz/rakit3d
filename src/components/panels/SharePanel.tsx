@@ -103,8 +103,8 @@ export function SharePanel() {
           </div>
           {copied && <p className="text-[10px] text-emerald-600 dark:text-emerald-400">Tersalin!</p>}
           <p className="text-[10px] leading-snug opacity-50">
-            Link publik — siapa pun yang punya link bisa membuka. Aktif selama file tersimpan di
-            storage (tidak kedaluwarsa otomatis).
+            Link publik — siapa pun yang punya link bisa membuka. Otomatis kedaluwarsa setelah 7
+            hari untuk menghemat storage.
           </p>
         </div>
       )}
