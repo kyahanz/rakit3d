@@ -102,10 +102,11 @@ function buildLemari() {
   grpIsi.addChild(rak);
 
   // Pintu: node engsel INT_Pintu di tepi kiri; panel pintu sebagai child yang di-offset.
+  // angle -90 agar pintu membuka KELUAR (ke depan/+Z, ke arah penonton), bukan ke dalam.
   const hinge = doc
     .createNode('INT_Pintu')
     .setTranslation([-0.49, 1.04, 0.29])
-    .setExtras({ label: 'Pintu Lemari' }); // interaktif via konvensi INT_ (default rotate Y)
+    .setExtras({ interactive: 'rotate', axis: 'y', angle: -90, label: 'Pintu Lemari', duration: 0.6 });
   const panel = makeBox(doc, buffer, 'Pintu_Panel', [0.98, 1.88, t], PANEL).setTranslation([0.49, 0, 0.01]);
   const knob = makeBox(doc, buffer, 'Knob', [0.03, 0.12, 0.03], METAL).setTranslation([0.92, 0, 0.04]);
   hinge.addChild(panel);
