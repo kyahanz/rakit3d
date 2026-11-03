@@ -54,6 +54,12 @@ const DEFAULT_SETTINGS: ViewerSettings = {
   grid: false,
   showPerf: false,
   envBlur: 0.5,
+  sun: true,
+  // Default setara posisi lama [1, 2, 1] (azimuth 45°, elevasi ~55°).
+  lightAzimuth: 45,
+  lightElevation: 55,
+  lightIntensity: 2.2,
+  autoRotate: false,
   assemblyHideFuture: false,
 };
 

@@ -44,6 +44,16 @@ export interface ViewerSettings {
   showPerf: boolean;
   /** Blur environment saat dipakai sebagai background (0–1). */
   envBlur: number;
+  /** Matahari (directional light utama) nyala/mati. */
+  sun: boolean;
+  /** Arah cahaya utama: azimuth/putaran horizontal (derajat, 0–360). */
+  lightAzimuth: number;
+  /** Arah cahaya utama: tinggi/elevasi di atas horizon (derajat, 5–89). */
+  lightElevation: number;
+  /** Intensitas cahaya utama (directional light). */
+  lightIntensity: number;
+  /** Auto-putar objek (turntable) agar bayangan terlihat dari segala sisi. */
+  autoRotate: boolean;
   /** Mode Rakit: part di langkah > N disembunyikan (true) atau dibuat transparan (false). */
   assemblyHideFuture: boolean;
 }

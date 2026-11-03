@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
-import { invalidate, type ThreeEvent } from '@react-three/fiber';
+import { invalidate, useFrame, type ThreeEvent } from '@react-three/fiber';
 import { Box3, type Group, type Mesh, type Object3D, Sphere, Vector3 } from 'three';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { useViewerStore } from '@/store/viewerStore';
@@ -36,6 +36,7 @@ export function Model({ gltf, source }: ModelProps) {
   const setHovered = useViewerStore((s) => s.setHovered);
   const setActiveStep = useViewerStore((s) => s.setActiveStep);
   const wireframe = useViewerStore((s) => s.settings.wireframe);
+  const autoRotate = useViewerStore((s) => s.settings.autoRotate);
 
   // Dispose model lama + clear cache + revoke URL saat model berganti.
   useDisposeOnChange(source, scene);
@@ -52,6 +53,14 @@ export function Model({ gltf, source }: ModelProps) {
   useEffect(() => {
     setSceneRoot(scene);
   }, [scene, setSceneRoot]);
+
+  // Auto-putar objek (turntable): memutar grup pada sumbu Y agar bayangan
+  // terlihat menyapu dari segala sisi. Frameloop di-set "always" oleh ViewerCanvas.
+  useFrame((_, delta) => {
+    if (autoRotate && groupRef.current) {
+      groupRef.current.rotation.y += delta * 0.5;
+    }
+  });
 
   // Terapkan wireframe ke semua material saat setting berubah.
   useEffect(() => {

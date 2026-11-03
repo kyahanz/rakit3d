@@ -31,8 +31,8 @@ function Toggle({
         }`}
       >
         <span
-          className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${
-            checked ? 'translate-x-4' : 'translate-x-0.5'
+          className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${
+            checked ? 'translate-x-4' : 'translate-x-0'
           }`}
         />
       </button>
@@ -119,8 +119,63 @@ export function SettingsPanel() {
         )}
       </div>
 
+      {/* Cahaya */}
+      <div className="border-t border-neutral-200 pt-2 dark:border-neutral-800">
+        <p className="mb-1 text-[10px] font-medium uppercase opacity-50">Cahaya</p>
+        <Toggle label="Matahari" checked={settings.sun} onChange={(v) => update({ sun: v })} />
+        {settings.sun && (
+        <>
+        <div className="mt-1 flex items-center gap-2">
+          <span className="w-12 text-[10px] opacity-50">Arah</span>
+          <input
+            type="range"
+            min={0}
+            max={360}
+            step={1}
+            value={settings.lightAzimuth}
+            onChange={(e) => update({ lightAzimuth: Number(e.target.value) })}
+            className="h-1 flex-1 accent-sky-500"
+            aria-label="Arah cahaya (azimuth)"
+          />
+          <span className="w-9 text-right text-[10px] tabular-nums opacity-50">{settings.lightAzimuth}°</span>
+        </div>
+        <div className="mt-1.5 flex items-center gap-2">
+          <span className="w-12 text-[10px] opacity-50">Tinggi</span>
+          <input
+            type="range"
+            min={5}
+            max={89}
+            step={1}
+            value={settings.lightElevation}
+            onChange={(e) => update({ lightElevation: Number(e.target.value) })}
+            className="h-1 flex-1 accent-sky-500"
+            aria-label="Tinggi cahaya (elevasi)"
+          />
+          <span className="w-9 text-right text-[10px] tabular-nums opacity-50">{settings.lightElevation}°</span>
+        </div>
+        <div className="mt-1.5 flex items-center gap-2">
+          <span className="w-12 text-[10px] opacity-50">Terang</span>
+          <input
+            type="range"
+            min={0}
+            max={5}
+            step={0.1}
+            value={settings.lightIntensity}
+            onChange={(e) => update({ lightIntensity: Number(e.target.value) })}
+            className="h-1 flex-1 accent-sky-500"
+            aria-label="Intensitas cahaya"
+          />
+          <span className="w-9 text-right text-[10px] tabular-nums opacity-50">
+            {settings.lightIntensity.toFixed(1)}
+          </span>
+        </div>
+        </>
+        )}
+      </div>
+
       {/* Toggles */}
       <div className="border-t border-neutral-200 pt-1 dark:border-neutral-800">
+        <Toggle label="Putar objek" checked={settings.autoRotate} onChange={(v) => update({ autoRotate: v })} />
         <Toggle label="Bayangan" checked={settings.shadows} onChange={(v) => update({ shadows: v })} />
         <Toggle label="Wireframe" checked={settings.wireframe} onChange={(v) => update({ wireframe: v })} />
         <Toggle label="Grid" checked={settings.grid} onChange={(v) => update({ grid: v })} />

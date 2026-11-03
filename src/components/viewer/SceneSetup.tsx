@@ -51,6 +51,21 @@ export function SceneSetup() {
   // Skala shadow/grid/light mengikuti ukuran model (generik untuk model apa pun).
   const shadowScale = Math.max(2, radius * 3);
   const shadowCam = Math.max(2, radius * 2);
+
+  // Posisi cahaya utama dihitung dari azimuth (putaran horizontal) + elevasi (tinggi).
+  // Jarak = shadowCam*2 agar ikut skala model & tetap di dalam frustum shadow (far = shadowCam*6).
+  const DEG = Math.PI / 180;
+  const lightDist = shadowCam * 2;
+  const az = settings.lightAzimuth * DEG;
+  const el = settings.lightElevation * DEG;
+  const horiz = lightDist * Math.cos(el);
+  const lightPos: [number, number, number] = [
+    horiz * Math.sin(az),
+    lightDist * Math.sin(el),
+    horiz * Math.cos(az),
+  ];
+  // Frustum shadow dilebarkan agar bayangan panjang (matahari rendah) tidak terpotong.
+  const shadowOrtho = shadowCam * 2.5;
   // ContactShadows membuat render target di useMemo([resolution,width,height,scale,color])
   // dan TIDAK men-dispose-nya → mengubah `scale` per model membocorkan texture. Maka props
   // ContactShadows dibuat KONSTAN dan penskalaan dilakukan lewat <group scale> pembungkus.
@@ -66,34 +81,45 @@ export function SceneSetup() {
 
       {settings.background === 'color' && <color attach="background" args={[settings.backgroundColor]} />}
 
-      <ambientLight intensity={0.25} />
-      <directionalLight
-        castShadow={settings.shadows}
-        position={[shadowCam, shadowCam * 2, shadowCam]}
-        intensity={2.2}
-        shadow-mapSize={[2048, 2048]}
-        shadow-bias={-0.0001}
-      >
-        <orthographicCamera
-          attach="shadow-camera"
-          args={[-shadowCam, shadowCam, shadowCam, -shadowCam, 0.1, shadowCam * 6]}
-        />
-      </directionalLight>
-
-      {settings.shadows && (
-        // Props ContactShadows konstan (RT dibuat sekali); ukuran via group scale.
-        <group scale={shadowGroupScale}>
-          <ContactShadows
-            position={[0, 0, 0]}
-            opacity={0.5}
-            scale={4}
-            blur={2.6}
-            far={2}
-            resolution={1024}
-            color="#000000"
+      {/* Ambient dinaikkan saat matahari mati agar model tetap terbaca (pakai HDRI/ambient). */}
+      <ambientLight intensity={settings.sun ? 0.25 : 0.6} />
+      {settings.sun && (
+        <directionalLight
+          castShadow={settings.shadows}
+          position={lightPos}
+          intensity={settings.lightIntensity}
+          shadow-mapSize={[2048, 2048]}
+          shadow-bias={-0.0001}
+        >
+          <orthographicCamera
+            attach="shadow-camera"
+            args={[-shadowOrtho, shadowOrtho, shadowOrtho, -shadowOrtho, 0.1, shadowCam * 8]}
           />
-        </group>
+        </directionalLight>
       )}
+
+      {settings.shadows &&
+        (settings.sun ? (
+          // Matahari nyala → lantai penerima bayangan directional (ikut arah cahaya & kamera).
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
+            <planeGeometry args={[shadowScale * 8, shadowScale * 8]} />
+            <shadowMaterial transparent opacity={0.35} />
+          </mesh>
+        ) : (
+          // Matahari mati → bayangan kontak lembut (grounding) karena tak ada arah cahaya.
+          // Props ContactShadows konstan (RT dibuat sekali); ukuran via group scale.
+          <group scale={shadowGroupScale}>
+            <ContactShadows
+              position={[0, 0, 0]}
+              opacity={0.5}
+              scale={4}
+              blur={2.6}
+              far={2}
+              resolution={1024}
+              color="#000000"
+            />
+          </group>
+        ))}
 
       {settings.grid && (
         <Grid

@@ -10,6 +10,7 @@ import { DropZone } from '@/components/upload/DropZone';
 import { LoadingOverlay } from '@/components/upload/LoadingOverlay';
 import { ErrorToast } from '@/components/upload/ErrorToast';
 import { InteractionTooltip } from '@/components/viewer/InteractionTooltip';
+import { SunDial } from '@/components/viewer/SunDial';
 
 export default function App() {
   const sidebarOpen = useViewerStore((s) => s.sidebarOpen);
@@ -48,6 +49,7 @@ export default function App() {
 
         {/* Overlay UI (di luar canvas). */}
         <Toolbar />
+        <SunDial />
         <DropZone />
         <LoadingOverlay />
         <ErrorToast />
