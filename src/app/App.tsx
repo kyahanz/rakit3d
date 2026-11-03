@@ -38,10 +38,12 @@ export default function App() {
         <ErrorToast />
       </main>
 
-      {/* Bottom sheet (mobile). */}
-      <MobileSheet>
-        <Sidebar />
-      </MobileSheet>
+      {/* Bottom sheet (mobile) — ikut toggle sidebar yang sama (hide/show). */}
+      {sidebarOpen && (
+        <MobileSheet>
+          <Sidebar />
+        </MobileSheet>
+      )}
 
       {/* Tooltip hover (fixed, mengikuti kursor). */}
       <InteractionTooltip />
