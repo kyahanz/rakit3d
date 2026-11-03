@@ -2,13 +2,15 @@ import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { invalidate, useFrame, type ThreeEvent } from '@react-three/fiber';
 import {
   Box3,
-  type Color,
   type Group,
+  LineBasicMaterial,
+  LineSegments,
+  type Material,
   type Mesh,
   type Object3D,
   Sphere,
-  type Texture,
   Vector3,
+  WireframeGeometry,
 } from 'three';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { useViewerStore } from '@/store/viewerStore';
@@ -25,73 +27,103 @@ import type { ModelSource } from '@/types/viewer';
 
 const CLICK_THRESHOLD = 6; // px — di atas ini dianggap drag kamera, bukan klik.
 
-// Warna seragam untuk semua garis wireframe (agar topologi mudah dibaca,
-// tidak mengikuti warna/tekstur objek — mirip inspector Sketchfab).
+// Warna seragam untuk garis wireframe (agar topologi mudah dibaca, tidak
+// mengikuti warna/tekstur objek — mirip inspector Sketchfab).
 const WIREFRAME_COLOR = '#2b6cff';
-
-interface WireframeMaterial {
-  wireframe?: boolean;
-  color?: Color;
-  emissive?: Color;
-  emissiveIntensity?: number;
-  map?: Texture | null;
-  vertexColors?: boolean;
-  needsUpdate?: boolean;
-}
-
-// Snapshot nilai material asli agar bisa dipulihkan saat wireframe dimatikan.
-interface WireframeSnapshot {
-  color?: Color;
-  emissive?: Color;
-  emissiveIntensity?: number;
-  map?: Texture | null;
-  vertexColors?: boolean;
-}
-
-const wireframeOriginals = new WeakMap<WireframeMaterial, WireframeSnapshot>();
+const WIREFRAME_OVERLAY = '__wireframeOverlay';
 
 function isMesh(o: Object3D): o is Mesh {
   return (o as Mesh).isMesh === true;
 }
 
-// Aktifkan/matikan wireframe satu-warna pada sebuah material.
-function applyWireframe(m: WireframeMaterial, on: boolean): void {
-  if (!('wireframe' in m)) return;
+// Material permukaan yang bisa diberi polygon offset (dorong ke belakang agar
+// garis wireframe di atasnya tidak z-fighting).
+interface OffsetMaterial {
+  polygonOffset?: boolean;
+  polygonOffsetFactor?: number;
+  polygonOffsetUnits?: number;
+  needsUpdate?: boolean;
+}
+
+interface OffsetSnapshot {
+  m: OffsetMaterial;
+  po: boolean;
+  pf: number;
+  pu: number;
+}
+
+interface WireframeHost extends Mesh {
+  userData: Record<string, unknown> & {
+    __wfOverlay?: LineSegments;
+    __wfOffset?: OffsetSnapshot[];
+  };
+}
+
+// Aktifkan/matikan wireframe pada SATU mesh. Model tetap tampil solid; garis
+// wireframe satu warna digambar sebagai overlay di atas permukaan (bukan
+// mengubah material jadi kerangka transparan). Permukaan diberi polygon offset
+// agar garis bersih tanpa z-fighting.
+function setMeshWireframe(mesh: Mesh, on: boolean): void {
+  const host = mesh as WireframeHost;
   if (on) {
-    if (!wireframeOriginals.has(m)) {
-      wireframeOriginals.set(m, {
-        color: m.color?.clone(),
-        emissive: m.emissive?.clone(),
-        emissiveIntensity: m.emissiveIntensity,
-        map: m.map ?? null,
-        vertexColors: m.vertexColors,
-      });
-    }
-    m.wireframe = true;
-    // Paksa warna seragam: matikan tekstur & vertex color, set warna + emissive sama.
-    if (m.map !== undefined) m.map = null;
-    if (m.vertexColors !== undefined) m.vertexColors = false;
-    m.color?.set(WIREFRAME_COLOR);
-    m.emissive?.set(WIREFRAME_COLOR);
-    if (m.emissiveIntensity !== undefined) m.emissiveIntensity = 1;
-    m.needsUpdate = true;
-  } else {
-    const orig = wireframeOriginals.get(m);
-    m.wireframe = false;
-    if (orig) {
-      if (orig.color && m.color) m.color.copy(orig.color);
-      if (orig.emissive && m.emissive) m.emissive.copy(orig.emissive);
-      if (m.emissiveIntensity !== undefined && orig.emissiveIntensity !== undefined) {
-        m.emissiveIntensity = orig.emissiveIntensity;
-      }
-      if (m.map !== undefined) m.map = orig.map ?? null;
-      if (m.vertexColors !== undefined && orig.vertexColors !== undefined) {
-        m.vertexColors = orig.vertexColors;
-      }
-      wireframeOriginals.delete(m);
+    if (host.userData.__wfOverlay) return; // sudah aktif
+
+    const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    host.userData.__wfOffset = mats.map((mm) => {
+      const m = mm as OffsetMaterial;
+      const snap: OffsetSnapshot = {
+        m,
+        po: m.polygonOffset ?? false,
+        pf: m.polygonOffsetFactor ?? 0,
+        pu: m.polygonOffsetUnits ?? 0,
+      };
+      m.polygonOffset = true;
+      m.polygonOffsetFactor = 1;
+      m.polygonOffsetUnits = 1;
       m.needsUpdate = true;
+      return snap;
+    });
+
+    // Overlay berbagi koordinat geometri mesh → sejajar sempurna sebagai child.
+    const lines = new LineSegments(
+      new WireframeGeometry(mesh.geometry),
+      new LineBasicMaterial({ color: WIREFRAME_COLOR }),
+    );
+    lines.name = WIREFRAME_OVERLAY;
+    lines.renderOrder = 1;
+    lines.castShadow = false;
+    lines.receiveShadow = false;
+    lines.raycast = () => {}; // jangan ganggu klik/hover interaksi
+    mesh.add(lines);
+    host.userData.__wfOverlay = lines;
+  } else {
+    const lines = host.userData.__wfOverlay;
+    if (lines) {
+      mesh.remove(lines);
+      lines.geometry.dispose();
+      (lines.material as Material).dispose();
+      delete host.userData.__wfOverlay;
+    }
+    const offs = host.userData.__wfOffset;
+    if (offs) {
+      for (const s of offs) {
+        s.m.polygonOffset = s.po;
+        s.m.polygonOffsetFactor = s.pf;
+        s.m.polygonOffsetUnits = s.pu;
+        s.m.needsUpdate = true;
+      }
+      delete host.userData.__wfOffset;
     }
   }
+}
+
+// Kumpulkan dulu daftar mesh, baru terapkan (hindari mutasi children saat traverse).
+function applySceneWireframe(scene: Object3D, on: boolean): void {
+  const meshes: Mesh[] = [];
+  scene.traverse((o) => {
+    if (isMesh(o) && o.name !== WIREFRAME_OVERLAY) meshes.push(o);
+  });
+  for (const m of meshes) setMeshWireframe(m, on);
 }
 
 interface ModelProps {
@@ -136,27 +168,14 @@ export function Model({ gltf, source }: ModelProps) {
     }
   });
 
-  // Terapkan wireframe ke semua material saat setting berubah.
-  // Agar topologi mudah dibaca, garis wireframe dipaksa SATU warna seragam
-  // (tidak mengikuti warna/tekstur objek). Nilai asli material disimpan di
-  // WeakMap lalu dipulihkan saat wireframe dimatikan / model berganti.
+  // Terapkan wireframe saat setting berubah. Model tetap solid; garis topologi
+  // satu warna digambar sebagai overlay di atasnya (lihat setMeshWireframe).
   useEffect(() => {
-    scene.traverse((o) => {
-      if (!isMesh(o)) return;
-      const mats = Array.isArray(o.material) ? o.material : [o.material];
-      for (const m of mats) {
-        if (!m || !('wireframe' in m)) continue;
-        applyWireframe(m as WireframeMaterial, wireframe);
-      }
-    });
+    applySceneWireframe(scene, wireframe);
     invalidate();
     return () => {
-      // Pulihkan material saat efek di-cleanup (model berganti / unmount).
-      scene.traverse((o) => {
-        if (!isMesh(o)) return;
-        const mats = Array.isArray(o.material) ? o.material : [o.material];
-        for (const m of mats) applyWireframe(m as WireframeMaterial, false);
-      });
+      // Bersihkan overlay & pulihkan material saat cleanup (model berganti / unmount).
+      applySceneWireframe(scene, false);
     };
   }, [scene, wireframe]);
 
