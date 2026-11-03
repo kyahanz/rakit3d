@@ -28,6 +28,10 @@ export function FilePickerButton() {
         <Upload className="h-4 w-4" aria-hidden />
         Pilih File
       </button>
+      <p className="mt-1.5 text-center text-[10px] leading-snug opacity-50">
+        Format: <span className="font-mono">.glb</span> atau <span className="font-mono">.gltf</span>{' '}
+        (+ .bin &amp; tekstur). .obj/.mtl/.fbx belum didukung.
+      </p>
     </>
   );
 }

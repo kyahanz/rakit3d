@@ -1,10 +1,17 @@
 import { type PointerEvent as ReactPointerEvent, type ReactNode, useRef, useState } from 'react';
+import { useViewerStore } from '@/store/viewerStore';
 
-const COLLAPSED = 40;
-const EXPANDED = 85;
+const COLLAPSED = 42;
+const EXPANDED = 88;
+const CLOSE_AT = 26; // tarik ke bawah di bawah ambang ini → tutup panel (dismiss)
 
-/** Bottom sheet untuk mobile (<768px): bisa ditarik naik/turun, snap saat dilepas. */
+/**
+ * Bottom sheet mobile (<768px): bisa ditarik naik/turun & snap saat dilepas.
+ * Ditarik jauh ke bawah → panel ditutup rapi (tombol tampilkan panel muncul di kiri-atas),
+ * bukan menyusut jadi sisa kecil yang seolah "nge-bug".
+ */
 export function MobileSheet({ children }: { children: ReactNode }) {
+  const setSidebarOpen = useViewerStore((s) => s.setSidebarOpen);
   const [expanded, setExpanded] = useState(false);
   const [dragHeight, setDragHeight] = useState<number | null>(null);
   const startRef = useRef<{ y: number; h: number } | null>(null);
@@ -18,14 +25,21 @@ export function MobileSheet({ children }: { children: ReactNode }) {
   const onPointerMove = (e: ReactPointerEvent) => {
     if (!startRef.current) return;
     const dy = startRef.current.y - e.clientY;
-    const vh = Math.min(92, Math.max(16, startRef.current.h + (dy / window.innerHeight) * 100));
+    const vh = Math.min(92, Math.max(10, startRef.current.h + (dy / window.innerHeight) * 100));
     setDragHeight(vh);
   };
   const onPointerUp = (e: ReactPointerEvent) => {
-    if (dragHeight != null) setExpanded(dragHeight > (COLLAPSED + EXPANDED) / 2);
+    const h = dragHeight ?? heightVh;
     setDragHeight(null);
     startRef.current = null;
     e.currentTarget.releasePointerCapture(e.pointerId);
+    if (h < CLOSE_AT) {
+      // Ditarik jauh ke bawah → tutup panel (bisa dibuka lagi lewat tombol kiri-atas).
+      setExpanded(false);
+      setSidebarOpen(false);
+      return;
+    }
+    setExpanded(h > (COLLAPSED + EXPANDED) / 2);
   };
 
   return (
@@ -39,7 +53,7 @@ export function MobileSheet({ children }: { children: ReactNode }) {
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         role="button"
-        aria-label="Tarik untuk mengubah tinggi panel"
+        aria-label="Tarik untuk mengubah tinggi panel; tarik jauh ke bawah untuk menutup"
         tabIndex={0}
       >
         <div className="h-1.5 w-10 rounded-full bg-neutral-300 dark:bg-neutral-700" />

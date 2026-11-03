@@ -102,6 +102,10 @@ export function SharePanel() {
             </button>
           </div>
           {copied && <p className="text-[10px] text-emerald-600 dark:text-emerald-400">Tersalin!</p>}
+          <p className="text-[10px] leading-snug opacity-50">
+            Link publik — siapa pun yang punya link bisa membuka. Aktif selama file tersimpan di
+            storage (tidak kedaluwarsa otomatis).
+          </p>
         </div>
       )}
 
