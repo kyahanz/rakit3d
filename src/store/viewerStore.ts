@@ -28,6 +28,23 @@ const SAMPLE_MODEL: ModelSource = {
   assemblyUrl: '/models/sample.assembly.json',
 };
 
+/** Model awal: dari parameter ?model=<url> (link berbagi) bila ada, selain itu sample. */
+function getInitialModel(): ModelSource {
+  try {
+    const url = new URLSearchParams(window.location.search).get('model');
+    if (url) {
+      const base = url.split('?')[0].split('#')[0];
+      const name = decodeURIComponent(base.split('/').pop() || 'model.glb');
+      return { url, name, isObjectUrl: false };
+    }
+  } catch {
+    // abaikan — pakai sample
+  }
+  return SAMPLE_MODEL;
+}
+
+const INITIAL_MODEL = getInitialModel();
+
 const DEFAULT_SETTINGS: ViewerSettings = {
   environment: 'city',
   background: 'transparent',
@@ -51,6 +68,8 @@ interface ViewerState {
   model: ModelSource;
   /** Model terakhir yang berhasil dimuat (untuk pulih saat load gagal). */
   lastGoodModel: ModelSource;
+  /** File .glb mentah yang di-drop (untuk fitur Buat Link / upload). */
+  shareFile: File | null;
   stats: ModelStats | null;
   /** Radius bounding sphere model (meter) untuk batas zoom relatif. */
   modelRadius: number;
@@ -114,6 +133,7 @@ interface ViewerState {
   // --- Actions ---
   setModel: (model: ModelSource) => void;
   setLastGoodModel: (model: ModelSource) => void;
+  setShareFile: (file: File | null) => void;
   setStats: (stats: ModelStats | null) => void;
   setModelRadius: (r: number) => void;
   setSceneRoot: (root: Object3D | null) => void;
@@ -149,8 +169,9 @@ interface ViewerState {
 }
 
 export const useViewerStore = create<ViewerState>((set) => ({
-  model: SAMPLE_MODEL,
-  lastGoodModel: SAMPLE_MODEL,
+  model: INITIAL_MODEL,
+  lastGoodModel: INITIAL_MODEL,
+  shareFile: null,
   stats: null,
   modelRadius: 1,
   sceneRoot: null,
@@ -177,7 +198,7 @@ export const useViewerStore = create<ViewerState>((set) => ({
   activeStep: null,
   assemblyAnimating: false,
 
-  loading: { active: true, progress: 0, fileName: 'sample.glb' },
+  loading: { active: true, progress: 0, fileName: INITIAL_MODEL.name },
   error: null,
   notice: null,
 
@@ -189,6 +210,7 @@ export const useViewerStore = create<ViewerState>((set) => ({
   setModel: (model) =>
     set({
       model,
+      shareFile: null,
       stats: null,
       error: null,
       sceneRoot: null,
@@ -211,6 +233,7 @@ export const useViewerStore = create<ViewerState>((set) => ({
       assemblyAnimating: false,
     }),
   setLastGoodModel: (lastGoodModel) => set({ lastGoodModel }),
+  setShareFile: (shareFile) => set({ shareFile }),
   setStats: (stats) => set({ stats }),
   setModelRadius: (modelRadius) => set({ modelRadius }),
   setSceneRoot: (sceneRoot) => set({ sceneRoot }),

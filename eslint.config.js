@@ -37,5 +37,12 @@ export default tseslint.config(
       'no-console': 'off',
     },
   },
+  // Serverless functions (Vercel) — lingkungan Node.
+  {
+    files: ['api/**/*.ts'],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
   prettier,
 );

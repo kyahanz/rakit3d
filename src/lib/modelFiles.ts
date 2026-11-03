@@ -18,6 +18,8 @@ export class ModelLoadError extends Error {
 
 export interface PreparedModel {
   source: ModelSource;
+  /** File model utama (untuk fitur Buat Link; upload hanya didukung .glb mandiri). */
+  mainFile: File;
   /** Peringatan non-fatal (mis. ukuran besar). */
   warning?: string;
 }
@@ -97,7 +99,7 @@ export function prepareModelFromFiles(fileList: FileList | File[]): PreparedMode
     assemblyFromFile,
   };
 
-  return { source, warning };
+  return { source, mainFile: main, warning };
 }
 
 /** Cek cepat apakah daftar file mengandung model yang didukung. */

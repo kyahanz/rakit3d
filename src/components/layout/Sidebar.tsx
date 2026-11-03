@@ -9,6 +9,7 @@ import { AnimationPanel } from '@/components/panels/AnimationPanel';
 import { InteractionsPanel } from '@/components/panels/InteractionsPanel';
 import { SettingsPanel } from '@/components/panels/SettingsPanel';
 import { AssemblyPanel } from '@/components/panels/AssemblyPanel';
+import { SharePanel } from '@/components/panels/SharePanel';
 
 /**
  * Panel kiri. Berisi info model & scene tree (tahap 4). Animation, Settings, dan
@@ -18,6 +19,7 @@ export function Sidebar() {
   const model = useViewerStore((s) => s.model);
   const hasAssembly = useViewerStore((s) => s.assembly !== null);
   const setSidebarOpen = useViewerStore((s) => s.setSidebarOpen);
+  const modelUrl = model.url;
 
   return (
     <aside className="flex h-full w-full flex-col overflow-hidden bg-white text-neutral-900 dark:bg-neutral-900 dark:text-neutral-100">
@@ -47,6 +49,9 @@ export function Sidebar() {
 
       <div className="scrollbar-thin flex-1 overflow-y-auto">
         {hasAssembly && <AssemblyPanel />}
+        <Section title="Bagikan">
+          <SharePanel key={modelUrl} />
+        </Section>
         <Section title="Info Model">
           <ModelInfoPanel />
         </Section>
