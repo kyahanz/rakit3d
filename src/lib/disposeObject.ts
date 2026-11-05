@@ -3,6 +3,9 @@
 import { type Material, type Mesh, type Object3D, Texture } from 'three';
 
 function disposeMaterial(material: Material): void {
+  // Material yang ditandai __wfKeep (mis. material flat wireframe yang dibagikan
+  // antar model) tidak boleh di-dispose — ia hidup di luar lifecycle model.
+  if ((material.userData as { __wfKeep?: boolean })?.__wfKeep) return;
   // Dispose semua texture yang menempel pada properti material (map, normalMap, dll).
   const record = material as unknown as Record<string, unknown>;
   for (const value of Object.values(record)) {

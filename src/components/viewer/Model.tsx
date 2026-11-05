@@ -3,14 +3,16 @@ import { invalidate, useFrame, type ThreeEvent } from '@react-three/fiber';
 import {
   Box3,
   type Group,
+  DoubleSide,
+  EdgesGeometry,
   LineBasicMaterial,
   LineSegments,
   type Material,
   type Mesh,
+  MeshStandardMaterial,
   type Object3D,
   Sphere,
   Vector3,
-  WireframeGeometry,
 } from 'three';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { useViewerStore } from '@/store/viewerStore';
@@ -23,7 +25,7 @@ import { assemblyRuntime } from '@/lib/assemblyRuntime';
 import { Highlighter } from './Highlighter';
 import { AssemblyController } from './AssemblyController';
 import { DimensionLines } from './DimensionLines';
-import type { ModelSource } from '@/types/viewer';
+import type { ModelSource, WireframeMode } from '@/types/viewer';
 
 const CLICK_THRESHOLD = 6; // px — di atas ini dianggap drag kamera, bukan klik.
 
@@ -31,99 +33,136 @@ const CLICK_THRESHOLD = 6; // px — di atas ini dianggap drag kamera, bukan kli
 // mengikuti warna/tekstur objek — mirip inspector Sketchfab).
 const WIREFRAME_COLOR = '#2b6cff';
 const WIREFRAME_OVERLAY = '__wireframeOverlay';
+// Ambang sudut EdgesGeometry (derajat): garis hanya digambar bila dua segitiga
+// bertemu di sudut > nilai ini. Menyembunyikan diagonal segitiga pada permukaan
+// datar/nyaris datar → topologi bersih (mirip Sketchfab), tidak jadi "blok biru".
+const WIREFRAME_EDGE_ANGLE = 25;
+
+// Material permukaan flat netral untuk mode 'overlay' (Topologi) — meniru
+// inspector Sketchfab: warna seragam terang, matte, dan OPAQUE. Opaque + tulis
+// depth = garis sisi belakang teroklusi (tidak tembus pandang / "sarang laba-laba"
+// di roda), dan tekstur/warna asli disembunyikan supaya garis biru mudah dibaca.
+// Polygon offset mendorong permukaan sedikit ke belakang agar garis tidak z-fight.
+// Dibagikan antar mesh & ditandai __wfKeep supaya tidak ikut di-dispose saat model
+// berganti (lihat disposeObject).
+const flatSurfaceMaterial = new MeshStandardMaterial({
+  color: '#d4d6db',
+  roughness: 0.95,
+  metalness: 0,
+  // Double-sided: geometri tipis/terbuka (panel bodi, pelat) tetap menulis depth
+  // dari kedua sisi → garis sisi belakang teroklusi (mirip Sketchfab "Single Sided OFF").
+  side: DoubleSide,
+  polygonOffset: true,
+  polygonOffsetFactor: 1,
+  polygonOffsetUnits: 1,
+});
+flatSurfaceMaterial.userData.__wfKeep = true;
 
 function isMesh(o: Object3D): o is Mesh {
   return (o as Mesh).isMesh === true;
 }
 
-// Material permukaan yang bisa diberi polygon offset (dorong ke belakang agar
-// garis wireframe di atasnya tidak z-fighting).
-interface OffsetMaterial {
-  polygonOffset?: boolean;
-  polygonOffsetFactor?: number;
-  polygonOffsetUnits?: number;
+// Properti material yang diubah mode 'colored'. Snapshot nilai asli disimpan di
+// material.userData dan HANYA diambil sekali (cek undefined) — penting karena di
+// GLB satu material sering dipakai banyak mesh; tanpa ini, mesh kedua akan
+// men-snapshot nilai yang sudah dimutasi mesh pertama (true), lalu saat restore
+// nilai "true" itu bocor → wireframe nyangkut walau sudah dimatikan.
+interface WFMaterial {
+  wireframe?: boolean;
   needsUpdate?: boolean;
-}
-
-interface OffsetSnapshot {
-  m: OffsetMaterial;
-  po: boolean;
-  pf: number;
-  pu: number;
+  userData: Record<string, unknown> & { __wfWire?: boolean };
 }
 
 interface WireframeHost extends Mesh {
   userData: Record<string, unknown> & {
     __wfOverlay?: LineSegments;
-    __wfOffset?: OffsetSnapshot[];
+    /** Material asli mesh, disimpan saat mode Topologi menukar ke material flat. */
+    __wfOrigMat?: Material | Material[];
   };
 }
 
-// Aktifkan/matikan wireframe pada SATU mesh. Model tetap tampil solid; garis
-// wireframe satu warna digambar sebagai overlay di atas permukaan (bukan
-// mengubah material jadi kerangka transparan). Permukaan diberi polygon offset
-// agar garis bersih tanpa z-fighting.
-function setMeshWireframe(mesh: Mesh, on: boolean): void {
-  const host = mesh as WireframeHost;
+function materialsOf(mesh: Mesh): WFMaterial[] {
+  return (Array.isArray(mesh.material) ? mesh.material : [mesh.material]) as unknown as WFMaterial[];
+}
+
+// Mode 'colored': material.wireframe = true (kerangka ikut warna material).
+function setMatWire(m: WFMaterial, on: boolean): void {
   if (on) {
-    if (host.userData.__wfOverlay) return; // sudah aktif
-
-    const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-    host.userData.__wfOffset = mats.map((mm) => {
-      const m = mm as OffsetMaterial;
-      const snap: OffsetSnapshot = {
-        m,
-        po: m.polygonOffset ?? false,
-        pf: m.polygonOffsetFactor ?? 0,
-        pu: m.polygonOffsetUnits ?? 0,
-      };
-      m.polygonOffset = true;
-      m.polygonOffsetFactor = 1;
-      m.polygonOffsetUnits = 1;
-      m.needsUpdate = true;
-      return snap;
-    });
-
-    // Overlay berbagi koordinat geometri mesh → sejajar sempurna sebagai child.
-    const lines = new LineSegments(
-      new WireframeGeometry(mesh.geometry),
-      new LineBasicMaterial({ color: WIREFRAME_COLOR }),
-    );
-    lines.name = WIREFRAME_OVERLAY;
-    lines.renderOrder = 1;
-    lines.castShadow = false;
-    lines.receiveShadow = false;
-    lines.raycast = () => {}; // jangan ganggu klik/hover interaksi
-    mesh.add(lines);
-    host.userData.__wfOverlay = lines;
+    if (m.userData.__wfWire === undefined) m.userData.__wfWire = m.wireframe ?? false;
+    m.wireframe = true;
+    m.needsUpdate = true;
   } else {
-    const lines = host.userData.__wfOverlay;
-    if (lines) {
-      mesh.remove(lines);
-      lines.geometry.dispose();
-      (lines.material as Material).dispose();
-      delete host.userData.__wfOverlay;
-    }
-    const offs = host.userData.__wfOffset;
-    if (offs) {
-      for (const s of offs) {
-        s.m.polygonOffset = s.po;
-        s.m.polygonOffsetFactor = s.pf;
-        s.m.polygonOffsetUnits = s.pu;
-        s.m.needsUpdate = true;
-      }
-      delete host.userData.__wfOffset;
+    const s = m.userData.__wfWire;
+    if (s !== undefined) {
+      m.wireframe = s;
+      m.needsUpdate = true;
+      delete m.userData.__wfWire;
     }
   }
 }
 
-// Kumpulkan dulu daftar mesh, baru terapkan (hindari mutasi children saat traverse).
-function applySceneWireframe(scene: Object3D, on: boolean): void {
+function addOverlay(mesh: Mesh, host: WireframeHost): void {
+  if (host.userData.__wfOverlay) return;
+  // Overlay berbagi koordinat geometri mesh → sejajar sempurna sebagai child.
+  // EdgesGeometry (bukan WireframeGeometry) → hanya garis tepi "nyata", diagonal
+  // segitiga pada permukaan datar disembunyikan supaya tidak terlalu padat.
+  const lines = new LineSegments(
+    new EdgesGeometry(mesh.geometry, WIREFRAME_EDGE_ANGLE),
+    new LineBasicMaterial({ color: WIREFRAME_COLOR }),
+  );
+  lines.name = WIREFRAME_OVERLAY;
+  lines.renderOrder = 1;
+  lines.castShadow = false;
+  lines.receiveShadow = false;
+  lines.raycast = () => {}; // jangan ganggu klik/hover interaksi
+  mesh.add(lines);
+  host.userData.__wfOverlay = lines;
+}
+
+// Bersihkan SEMUA jejak wireframe pada satu mesh & pulihkan materialnya.
+function clearMesh(mesh: Mesh): void {
+  const host = mesh as WireframeHost;
+  const lines = host.userData.__wfOverlay;
+  if (lines) {
+    lines.parent?.remove(lines);
+    lines.geometry.dispose();
+    (lines.material as Material).dispose();
+    delete host.userData.__wfOverlay;
+  }
+  // Pulihkan material asli bila mode Topologi sempat menukarnya ke flat.
+  const orig = host.userData.__wfOrigMat;
+  if (orig !== undefined) {
+    mesh.material = orig;
+    delete host.userData.__wfOrigMat;
+  }
+  // Pulihkan flag wireframe bila mode Berwarna sempat menyalakannya.
+  for (const m of materialsOf(mesh)) setMatWire(m, false);
+}
+
+// Terapkan wireframe ke seluruh scene. Selalu BERSIHKAN dulu lalu pasang mode
+// yang diminta → deterministik, aman untuk ganti mode maupun material yang
+// dipakai bersama banyak mesh.
+function applySceneWireframe(scene: Object3D, on: boolean, mode: WireframeMode): void {
   const meshes: Mesh[] = [];
   scene.traverse((o) => {
     if (isMesh(o) && o.name !== WIREFRAME_OVERLAY) meshes.push(o);
   });
-  for (const m of meshes) setMeshWireframe(m, on);
+
+  for (const mesh of meshes) clearMesh(mesh);
+  if (!on) return;
+
+  for (const mesh of meshes) {
+    if (mode === 'colored') {
+      // Berwarna: pertahankan material asli, cukup aktifkan material.wireframe.
+      for (const m of materialsOf(mesh)) setMatWire(m, true);
+    } else {
+      // Topologi: ganti permukaan jadi flat opaque (oklusi benar) + garis biru.
+      const host = mesh as WireframeHost;
+      if (host.userData.__wfOrigMat === undefined) host.userData.__wfOrigMat = mesh.material;
+      mesh.material = flatSurfaceMaterial;
+      addOverlay(mesh, host);
+    }
+  }
 }
 
 interface ModelProps {
@@ -142,6 +181,7 @@ export function Model({ gltf, source }: ModelProps) {
   const setHovered = useViewerStore((s) => s.setHovered);
   const setActiveStep = useViewerStore((s) => s.setActiveStep);
   const wireframe = useViewerStore((s) => s.settings.wireframe);
+  const wireframeMode = useViewerStore((s) => s.settings.wireframeMode);
   const autoRotate = useViewerStore((s) => s.settings.autoRotate);
 
   // Dispose model lama + clear cache + revoke URL saat model berganti.
@@ -171,13 +211,13 @@ export function Model({ gltf, source }: ModelProps) {
   // Terapkan wireframe saat setting berubah. Model tetap solid; garis topologi
   // satu warna digambar sebagai overlay di atasnya (lihat setMeshWireframe).
   useEffect(() => {
-    applySceneWireframe(scene, wireframe);
+    applySceneWireframe(scene, wireframe, wireframeMode);
     invalidate();
     return () => {
       // Bersihkan overlay & pulihkan material saat cleanup (model berganti / unmount).
-      applySceneWireframe(scene, false);
+      applySceneWireframe(scene, false, wireframeMode);
     };
-  }, [scene, wireframe]);
+  }, [scene, wireframe, wireframeMode]);
 
   // Model berhasil tampil → matikan overlay & catat sebagai model baik terakhir.
   useEffect(() => {

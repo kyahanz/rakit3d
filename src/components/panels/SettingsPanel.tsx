@@ -1,7 +1,11 @@
 import { useViewerStore } from '@/store/viewerStore';
-import type { BackgroundMode, EnvironmentPreset } from '@/types/viewer';
+import type { BackgroundMode, EnvironmentPreset, WireframeMode } from '@/types/viewer';
 
 const ENV_PRESETS: EnvironmentPreset[] = ['city', 'studio', 'sunset', 'warehouse', 'apartment'];
+const WIREFRAME_MODES: { value: WireframeMode; label: string }[] = [
+  { value: 'overlay', label: 'Topologi' },
+  { value: 'colored', label: 'Berwarna' },
+];
 const BG_MODES: { value: BackgroundMode; label: string }[] = [
   { value: 'transparent', label: 'Transparan' },
   { value: 'color', label: 'Warna' },
@@ -178,6 +182,29 @@ export function SettingsPanel() {
         <Toggle label="Putar objek" checked={settings.autoRotate} onChange={(v) => update({ autoRotate: v })} />
         <Toggle label="Bayangan" checked={settings.shadows} onChange={(v) => update({ shadows: v })} />
         <Toggle label="Wireframe" checked={settings.wireframe} onChange={(v) => update({ wireframe: v })} />
+        {settings.wireframe && (
+          <div className="mb-1 flex gap-1 pl-3">
+            {WIREFRAME_MODES.map((m) => (
+              <button
+                key={m.value}
+                type="button"
+                onClick={() => update({ wireframeMode: m.value })}
+                title={
+                  m.value === 'overlay'
+                    ? 'Garis topologi satu warna di atas model solid (mirip Sketchfab)'
+                    : 'Kerangka mengikuti warna material objek'
+                }
+                className={`flex-1 rounded px-1.5 py-1 text-[11px] ${
+                  settings.wireframeMode === m.value
+                    ? 'bg-sky-500 text-white'
+                    : 'bg-neutral-500/10 hover:bg-neutral-500/20'
+                }`}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+        )}
         <Toggle label="Grid" checked={settings.grid} onChange={(v) => update({ grid: v })} />
         {import.meta.env.DEV && (
           <Toggle label="Statistik FPS" checked={settings.showPerf} onChange={(v) => update({ showPerf: v })} />

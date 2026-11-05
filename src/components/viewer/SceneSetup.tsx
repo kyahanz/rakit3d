@@ -125,9 +125,11 @@ export function SceneSetup() {
       {settings.shadows &&
         (settings.sun ? (
           // Matahari nyala → lantai penerima bayangan directional (ikut arah cahaya & kamera).
+          // depthWrite=false agar bidang bayangan (transparan) tidak ikut menulis depth —
+          // kalau menulis, ia z-fighting dengan Grid yang sama-sama di y=0 → grid ngeblink.
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
             <planeGeometry args={[shadowScale * 8, shadowScale * 8]} />
-            <shadowMaterial transparent opacity={0.35} />
+            <shadowMaterial transparent opacity={0.35} depthWrite={false} />
           </mesh>
         ) : (
           // Matahari mati → bayangan kontak lembut (grounding) karena tak ada arah cahaya.
@@ -147,7 +149,9 @@ export function SceneSetup() {
 
       {settings.grid && (
         <Grid
-          position={[0, 0, 0]}
+          // Diangkat setipis mungkin di atas lantai agar depth-nya jelas di depan
+          // bidang bayangan/contact-shadow (sama-sama y=0) → tidak z-fighting / ngeblink.
+          position={[0, Math.max(0.001, radius * 0.002), 0]}
           args={[shadowScale, shadowScale]}
           cellSize={Math.max(0.1, radius / 10)}
           cellThickness={0.6}

@@ -12,6 +12,9 @@ export type BackgroundMode = 'transparent' | 'color' | 'environment';
 
 export type LoopMode = 'once' | 'repeat' | 'pingpong';
 
+/** Gaya tampilan wireframe. */
+export type WireframeMode = 'overlay' | 'colored';
+
 /** Sumber model yang sedang dimuat. */
 export interface ModelSource {
   /** URL untuk dimuat GLTFLoader (object URL blob atau path publik). */
@@ -39,6 +42,12 @@ export interface ViewerSettings {
   backgroundColor: string;
   shadows: boolean;
   wireframe: boolean;
+  /**
+   * Gaya wireframe:
+   * - 'overlay' : garis topologi SATU warna di atas model solid (mirip Sketchfab)
+   * - 'colored' : kerangka mengikuti warna/material objek (tanpa permukaan solid)
+   */
+  wireframeMode: WireframeMode;
   grid: boolean;
   /** Statistik FPS (r3f-perf) — hanya berpengaruh di mode development. */
   showPerf: boolean;

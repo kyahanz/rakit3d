@@ -51,6 +51,7 @@ const DEFAULT_SETTINGS: ViewerSettings = {
   backgroundColor: '#1a1a1f',
   shadows: true,
   wireframe: false,
+  wireframeMode: 'overlay',
   grid: false,
   showPerf: false,
   envBlur: 0.5,
